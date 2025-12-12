@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/transaction.dart';
 import '../../providers/wallet_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
-import '../../providers/budget_provider.dart';
-import '../../services/notification_service.dart';
+import '../../providers/user_provider.dart';
+import '../../widgets/custom_button.dart';
+
+// Import widgets
+import 'widgets/shared/amount_input.dart';
+import 'widgets/shared/date_time_picker.dart';
+import 'widgets/shared/note_field.dart';
+import 'widgets/shared/currency_input_formatter.dart';
+import 'widgets/expense/limit_info_card.dart';
+import 'widgets/expense/category_dropdown.dart';
+import 'widgets/expense/wallet_dropdown.dart';
+import 'widgets/expense/dialogs/insufficient_balance_dialog.dart';
+import 'widgets/expense/dialogs/limit_exceeded_dialog.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -25,225 +35,163 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   String? _selectedCategoryId;
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
+  bool _isLoading = false;
+
+  double get _currentAmount =>
+      CurrencyInputFormatter.getNumericValue(_amountController.text);
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController.addListener(_onAmountChanged);
+  }
+
+  void _onAmountChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _amountController.removeListener(_onAmountChanged);
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tambah Pengeluaran'),
-      ),
-      body: Consumer3<WalletProvider, CategoryProvider, BudgetProvider>(
-        builder:
-            (context, walletProvider, categoryProvider, budgetProvider, _) {
-          return Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                // Amount
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Jumlah Pengeluaran',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _amountController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
-                        ],
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                        textAlign: TextAlign.center,
-                        decoration: const InputDecoration(
-                          prefixText: 'Rp ',
-                          prefixStyle: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red,
-                          ),
-                          border: InputBorder.none,
-                          hintText: '0',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Masukkan jumlah';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
+      appBar: AppBar(title: const Text('Tambah Pengeluaran')),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildForm(context),
+    );
+  }
 
-                // Note (Apa yang dibeli)
-                TextFormField(
-                  controller: _noteController,
-                  decoration: const InputDecoration(
-                    labelText: 'Apa yang dibeli? ',
-                    prefixIcon: Icon(Icons.shopping_bag),
-                    hintText: 'Contoh: Makan siang, Bensin',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Masukkan catatan pengeluaran';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+  Widget _buildForm(BuildContext context) {
+    final walletProvider = context.watch<WalletProvider>();
+    final categoryProvider = context.watch<CategoryProvider>();
+    final txProvider = context.watch<TransactionProvider>();
+    final userProvider = context.watch<UserProvider>();
 
-                // Category
-                DropdownButtonFormField<String>(
-                  value: _selectedCategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori',
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  items: categoryProvider.categories.map((category) {
-                    return DropdownMenuItem(
-                      value: category.id,
-                      child: Row(
-                        children: [
-                          Text(category.icon),
-                          const SizedBox(width: 8),
-                          Text(category.name),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) =>
-                      setState(() => _selectedCategoryId = value),
-                  validator: (value) {
-                    if (value == null) return 'Pilih kategori';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Wallet
-                DropdownButtonFormField<String>(
-                  value: _selectedWalletId,
-                  decoration: const InputDecoration(
-                    labelText: 'Metode Pembayaran',
-                    prefixIcon: Icon(Icons.payment),
-                  ),
-                  items: walletProvider.wallets.map((wallet) {
-                    return DropdownMenuItem(
-                      value: wallet.id,
-                      child: Row(
-                        children: [
-                          Text(wallet.icon ?? '💰'),
-                          const SizedBox(width: 8),
-                          Text(wallet.name),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) =>
-                      setState(() => _selectedWalletId = value),
-                  validator: (value) {
-                    if (value == null) return 'Pilih metode pembayaran';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Date & Time
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: _selectDate,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Tanggal',
-                            prefixIcon: Icon(Icons.calendar_today),
-                          ),
-                          child: Text(
-                            DateFormat('dd/MM/yyyy').format(_selectedDate),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: InkWell(
-                        onTap: _selectTime,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Waktu',
-                            prefixIcon: Icon(Icons.access_time),
-                          ),
-                          child: Text(_selectedTime.format(context)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-
-                // Save Button
-                SizedBox(
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: _saveExpense,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text(
-                      'Simpan Pengeluaran',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          LimitInfoCard(
+            userProvider: userProvider,
+            txProvider: txProvider,
+          ),
+          const SizedBox(height: 20),
+          AmountInput(
+            controller: _amountController,
+            label: 'Jumlah Pengeluaran',
+            color: Colors.red,
+          ),
+          const SizedBox(height: 24),
+          NoteField(controller: _noteController),
+          const SizedBox(height: 16),
+          CategoryDropdown(
+            selectedCategoryId: _selectedCategoryId,
+            categoryProvider: categoryProvider,
+            userProvider: userProvider,
+            onChanged: (value) => setState(() => _selectedCategoryId = value),
+          ),
+          const SizedBox(height: 16),
+          ExpenseWalletDropdown(
+            selectedWalletId: _selectedWalletId,
+            walletProvider: walletProvider,
+            currentAmount: _currentAmount,
+            onChanged: (value) => setState(() => _selectedWalletId = value),
+          ),
+          const SizedBox(height: 16),
+          DateTimePicker(
+            selectedDate: _selectedDate,
+            selectedTime: _selectedTime,
+            onDateChanged: (date) => setState(() => _selectedDate = date),
+            onTimeChanged: (time) => setState(() => _selectedTime = time),
+          ),
+          const SizedBox(height: 32),
+          _buildSaveButton(walletProvider),
+        ],
       ),
     );
   }
 
-  Future<void> _selectDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+  Widget _buildSaveButton(WalletProvider walletProvider) {
+    final canSave = _checkCanSave(walletProvider);
+
+    return CustomButton(
+      text: canSave ? 'Simpan Pengeluaran' : 'Saldo Tidak Cukup',
+      onPressed: (_isLoading || !canSave) ? () {} : _saveExpense,
+      isLoading: _isLoading,
+      backgroundColor: canSave ? Colors.red : Colors.grey,
+      icon: canSave ? Icons.save_rounded : Icons.block,
     );
-    if (date != null) {
-      setState(() => _selectedDate = date);
-    }
   }
 
-  Future<void> _selectTime() async {
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
+  bool _checkCanSave(WalletProvider walletProvider) {
+    if (_selectedWalletId == null) return true;
+
+    final wallet = walletProvider.wallets.firstWhere(
+      (w) => w.id == _selectedWalletId,
+      orElse: () => throw Exception('Wallet not found'),
     );
-    if (time != null) {
-      setState(() => _selectedTime = time);
-    }
+
+    if (wallet.balance <= 0) return false;
+    if (_currentAmount > 0 && _currentAmount > wallet.balance) return false;
+
+    return true;
   }
 
-  void _saveExpense() {
-    if (_formKey.currentState!.validate()) {
-      final amount = double.parse(_amountController.text);
+  Future<void> _saveExpense() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategoryId == null || _selectedWalletId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Lengkapi semua field'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final walletProvider = context.read<WalletProvider>();
+    final amount = _currentAmount;
+    final walletId = _selectedWalletId!;
+    final wallet = walletProvider.wallets.firstWhere((w) => w.id == walletId);
+
+    // Validasi saldo
+    if (wallet.balance < amount) {
+      showDialog(
+        context: context,
+        builder: (ctx) =>
+            InsufficientBalanceDialog(wallet: wallet, amount: amount),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final userProvider = context.read<UserProvider>();
+      final txProvider = context.read<TransactionProvider>();
+      final categoryId = _selectedCategoryId!;
+
+      // Cek limit
+      final limitCheck =
+          _checkLimit(userProvider, txProvider, categoryId, amount);
+      if (limitCheck != null) {
+        setState(() => _isLoading = false);
+        final proceed = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => LimitExceededDialog(result: limitCheck),
+        );
+        if (proceed != true) return;
+        setState(() => _isLoading = true);
+      }
+
+      // Simpan transaksi
       final dateTime = DateTime(
         _selectedDate.year,
         _selectedDate.month,
@@ -256,68 +204,83 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         type: TransactionType.expense,
         amount: amount,
-        walletId: _selectedWalletId!,
-        categoryId: _selectedCategoryId, // Ini sudah String?
+        walletId: walletId,
+        categoryId: categoryId,
         dateTime: dateTime,
-        note: _noteController.text, // Ini String, bukan String?
+        note: _noteController.text.trim(),
       );
 
-      // Save transaction
-      context.read<TransactionProvider>().addTransaction(transaction);
+      await txProvider.addTransaction(transaction);
+      await walletProvider.updateBalance(walletId, -amount);
 
-      // Update wallet balance (subtract)
-      context.read<WalletProvider>().updateBalance(_selectedWalletId!, -amount);
-
-      // Check budget
-      _checkBudget();
-
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pengeluaran berhasil disimpan! 📝'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Pengeluaran berhasil disimpan!  📝'),
+              backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Gagal menyimpan:  $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _checkBudget() async {
-    if (_selectedCategoryId == null) return;
+  LimitCheckResult? _checkLimit(
+    UserProvider userProvider,
+    TransactionProvider txProvider,
+    String categoryId,
+    double amount,
+  ) {
+    final limitType = userProvider.getLimitTypeForCategory(categoryId);
+    final isWeekend = userProvider.isWeekend();
 
-    final now = DateTime.now();
-    final budgetProvider = context.read<BudgetProvider>();
-    final transactionProvider = context.read<TransactionProvider>();
-    final categoryProvider = context.read<CategoryProvider>();
+    if (limitType == 'unlimited' || limitType == 'none') return null;
 
-    final budget = budgetProvider.getByCategoryAndMonth(
-      _selectedCategoryId!,
-      now.month,
-      now.year,
-    );
+    if (limitType == 'daily' && userProvider.isDailyLimitEnabled) {
+      final todaySpent = txProvider
+          .getTodayExpenseByCategories(userProvider.dailyLimitCategories);
+      final newTotal = todaySpent + amount;
 
-    if (budget != null) {
-      final spent = transactionProvider.thisMonthTransactions
-          .where((t) =>
-              t.categoryId == _selectedCategoryId &&
-              t.type == TransactionType.expense)
-          .fold<double>(0, (sum, t) => sum + t.amount);
-
-      final percentage = ((spent / budget.limitAmount) * 100).round();
-
-      if (percentage >= 80) {
-        final category = categoryProvider.getById(_selectedCategoryId!);
-        await NotificationService().showBudgetWarning(
-          category?.name ?? 'Kategori',
-          percentage,
+      if (newTotal > userProvider.dailyLimit) {
+        return LimitCheckResult(
+          type: 'daily',
+          limitName: 'Limit Harian',
+          currentSpent: todaySpent,
+          newAmount: amount,
+          limit: userProvider.dailyLimit,
+          exceeded: newTotal - userProvider.dailyLimit,
         );
       }
     }
-  }
 
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _noteController.dispose();
-    super.dispose();
+    if (limitType == 'weekend' &&
+        userProvider.isWeekendLimitEnabled &&
+        isWeekend) {
+      final weekendSpent = txProvider.getCurrentWeekendExpenseByCategories(
+          userProvider.weekendLimitCategories);
+      final newTotal = weekendSpent + amount;
+
+      if (newTotal > userProvider.weekendLimit) {
+        return LimitCheckResult(
+          type: 'weekend',
+          limitName: 'Limit Weekend',
+          currentSpent: weekendSpent,
+          newAmount: amount,
+          limit: userProvider.weekendLimit,
+          exceeded: newTotal - userProvider.weekendLimit,
+        );
+      }
+    }
+
+    return null;
   }
 }

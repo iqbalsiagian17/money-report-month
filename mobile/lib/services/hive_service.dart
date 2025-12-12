@@ -3,7 +3,6 @@ import '../models/wallet.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
 import '../models/saving_goal.dart';
-import '../models/budget.dart';
 import '../models/recurring_transaction.dart';
 
 class HiveService {
@@ -16,7 +15,6 @@ class HiveService {
   static const String transactionsBox = 'transactions';
   static const String categoriesBox = 'categories';
   static const String savingsBox = 'savings';
-  static const String budgetsBox = 'budgets';
   static const String recurringBox = 'recurring';
   static const String settingsBox = 'settings';
 
@@ -25,7 +23,6 @@ class HiveService {
   late Box<TransactionModel> _transactionsBox;
   late Box<CategoryModel> _categoriesBox;
   late Box<SavingGoal> _savingsBox;
-  late Box<Budget> _budgetsBox;
   late Box<RecurringTransaction> _recurringBox;
   late Box _settingsBox;
 
@@ -34,7 +31,6 @@ class HiveService {
   Box<TransactionModel> get transactions => _transactionsBox;
   Box<CategoryModel> get categories => _categoriesBox;
   Box<SavingGoal> get savings => _savingsBox;
-  Box<Budget> get budgets => _budgetsBox;
   Box<RecurringTransaction> get recurring => _recurringBox;
   Box get settings => _settingsBox;
 
@@ -78,11 +74,6 @@ class HiveService {
       Hive.registerAdapter(SavingGoalAdapter());
     }
 
-    // Budget
-    if (!Hive.isAdapterRegistered(6)) {
-      Hive.registerAdapter(BudgetAdapter());
-    }
-
     // RecurringTransaction
     if (!Hive.isAdapterRegistered(7)) {
       Hive.registerAdapter(RecurringTypeAdapter());
@@ -98,7 +89,6 @@ class HiveService {
     _transactionsBox = await Hive.openBox<TransactionModel>(transactionsBox);
     _categoriesBox = await Hive.openBox<CategoryModel>(categoriesBox);
     _savingsBox = await Hive.openBox<SavingGoal>(savingsBox);
-    _budgetsBox = await Hive.openBox<Budget>(budgetsBox);
     _recurringBox = await Hive.openBox<RecurringTransaction>(recurringBox);
     _settingsBox = await Hive.openBox(settingsBox);
   }
@@ -109,7 +99,6 @@ class HiveService {
     await _transactionsBox.close();
     await _categoriesBox.close();
     await _savingsBox.close();
-    await _budgetsBox.close();
     await _recurringBox.close();
     await _settingsBox.close();
   }
@@ -120,7 +109,6 @@ class HiveService {
     await _transactionsBox.clear();
     await _categoriesBox.clear();
     await _savingsBox.clear();
-    await _budgetsBox.clear();
     await _recurringBox.clear();
     await _settingsBox.clear();
   }
@@ -381,54 +369,6 @@ class HiveService {
   }
 
   // ============================================
-  // BUDGET OPERATIONS
-  // ============================================
-
-  /// Tambah budget baru
-  Future<void> addBudget(Budget budget) async {
-    await _budgetsBox.put(budget.id, budget);
-  }
-
-  /// Update budget
-  Future<void> updateBudget(Budget budget) async {
-    await budget.save();
-  }
-
-  /// Hapus budget
-  Future<void> deleteBudget(String id) async {
-    await _budgetsBox.delete(id);
-  }
-
-  /// Ambil budget berdasarkan ID
-  Budget? getBudgetById(String id) {
-    return _budgetsBox.get(id);
-  }
-
-  /// Ambil semua budget
-  List<Budget> getAllBudgets() {
-    return _budgetsBox.values.toList();
-  }
-
-  /// Ambil budget bulan ini
-  List<Budget> getCurrentMonthBudgets() {
-    final now = DateTime.now();
-    return _budgetsBox.values
-        .where((b) => b.month == now.month && b.year == now.year)
-        .toList();
-  }
-
-  /// Ambil budget berdasarkan kategori dan bulan
-  Budget? getBudgetByCategoryAndMonth(String categoryId, int month, int year) {
-    try {
-      return _budgetsBox.values.firstWhere(
-        (b) => b.categoryId == categoryId && b.month == month && b.year == year,
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // ============================================
   // RECURRING TRANSACTION OPERATIONS
   // ============================================
 
@@ -610,24 +550,5 @@ class HiveService {
             t.dateTime.month == month &&
             t.dateTime.year == year)
         .fold(0, (sum, t) => sum + t.amount);
-  }
-
-  /// Cek apakah budget hampir habis (>= 80%)
-  bool isBudgetNearLimit(String categoryId, int month, int year) {
-    final budget = getBudgetByCategoryAndMonth(categoryId, month, year);
-    if (budget == null) return false;
-
-    final usage = getBudgetUsage(categoryId, month, year);
-    final percentage = (usage / budget.limitAmount) * 100;
-    return percentage >= 80;
-  }
-
-  /// Cek apakah budget sudah terlampaui (>= 100%)
-  bool isBudgetExceeded(String categoryId, int month, int year) {
-    final budget = getBudgetByCategoryAndMonth(categoryId, month, year);
-    if (budget == null) return false;
-
-    final usage = getBudgetUsage(categoryId, month, year);
-    return usage >= budget.limitAmount;
   }
 }

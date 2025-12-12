@@ -1,44 +1,50 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'budget.dart';
+part of 'custom_notification.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class BudgetAdapter extends TypeAdapter<Budget> {
+class CustomNotificationAdapter extends TypeAdapter<CustomNotification> {
   @override
-  final int typeId = 6;
+  final int typeId = 11;
 
   @override
-  Budget read(BinaryReader reader) {
+  CustomNotification read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Budget(
+    return CustomNotification(
       id: fields[0] as String,
-      categoryId: fields[1] as String,
-      limitAmount: fields[2] as double,
-      month: fields[3] as int,
-      year: fields[4] as int,
+      title: fields[1] as String,
+      message: fields[2] as String,
+      hour: fields[3] as int,
+      minute: fields[4] as int,
+      isEnabled: fields[5] as bool,
+      isDefault: fields[6] as bool,
     );
   }
 
   @override
-  void write(BinaryWriter writer, Budget obj) {
+  void write(BinaryWriter writer, CustomNotification obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.categoryId)
+      ..write(obj.title)
       ..writeByte(2)
-      ..write(obj.limitAmount)
+      ..write(obj.message)
       ..writeByte(3)
-      ..write(obj.month)
+      ..write(obj.hour)
       ..writeByte(4)
-      ..write(obj.year);
+      ..write(obj.minute)
+      ..writeByte(5)
+      ..write(obj.isEnabled)
+      ..writeByte(6)
+      ..write(obj.isDefault);
   }
 
   @override
@@ -47,7 +53,7 @@ class BudgetAdapter extends TypeAdapter<Budget> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is BudgetAdapter &&
+      other is CustomNotificationAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

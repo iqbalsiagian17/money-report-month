@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 // ============ BANKING STYLE BOTTOM NAV (Like Jago, Blu, Jenius) ============
-class BankingBottomNav extends StatefulWidget {
+class BottomNavBar extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
-  final VoidCallback?  onFabTap;
-  final List<BankingNavItem> items;
+  final VoidCallback? onFabTap;
+  final List<BottomNavItem> items;
   final Color? activeColor;
   final bool showFab;
 
-  const BankingBottomNav({
+  const BottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
@@ -21,10 +21,10 @@ class BankingBottomNav extends StatefulWidget {
   });
 
   @override
-  State<BankingBottomNav> createState() => _BankingBottomNavState();
+  State<BottomNavBar> createState() => _BottomNavBarState();
 }
 
-class _BankingBottomNavState extends State<BankingBottomNav>
+class _BottomNavBarState extends State<BottomNavBar>
     with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   late List<Animation<double>> _animations;
@@ -60,7 +60,7 @@ class _BankingBottomNavState extends State<BankingBottomNav>
   }
 
   @override
-  void didUpdateWidget(BankingBottomNav oldWidget) {
+  void didUpdateWidget(BottomNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentIndex != widget.currentIndex) {
       _controllers[oldWidget.currentIndex].reverse();
@@ -112,7 +112,7 @@ class _BankingBottomNavState extends State<BankingBottomNav>
                   2,
                   (index) => _buildNavItem(index + 2, primaryColor, isDark),
                 ),
-              if (! widget.showFab)
+              if (!widget.showFab)
                 ...List.generate(
                   widget.items.length - widget.items.length ~/ 2,
                   (index) => _buildNavItem(
@@ -166,7 +166,7 @@ class _BankingBottomNavState extends State<BankingBottomNav>
                   duration: const Duration(milliseconds: 200),
                   style: TextStyle(
                     fontSize: isActive ? 11 : 10,
-                    fontWeight: isActive ?  FontWeight.w600 : FontWeight.w500,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                     color: isActive
                         ? primaryColor
                         : (isDark ? Colors.grey[400] : Colors.grey[600]),
@@ -211,7 +211,7 @@ class _BankingBottomNavState extends State<BankingBottomNav>
           ],
         ),
         child: const Icon(
-          Icons.add_rounded,
+          Icons.compare_arrows_rounded,
           color: Colors.white,
           size: 28,
         ),
@@ -220,276 +220,14 @@ class _BankingBottomNavState extends State<BankingBottomNav>
   }
 }
 
-// ============ MINIMAL BANKING NAV (Like Revolut, N26) ============
-class MinimalBankingNav extends StatelessWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-  final List<BankingNavItem> items;
-  final Color? activeColor;
-
-  const MinimalBankingNav({
-    super.key,
-    required this.currentIndex,
-    required this.onTap,
-    required this.items,
-    this.activeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = activeColor ?? Theme.of(context).primaryColor;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ?  const Color(0xFF1A1A1A) : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? Colors.grey[800]!  : Colors.grey[200]!,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              final isActive = currentIndex == index;
-
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onTap(index);
-                },
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: 70,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isActive ? item.activeIcon : item.icon,
-                        size: 24,
-                        color: isActive
-                            ? primaryColor
-                            : (isDark ? Colors.grey[500] : Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight:
-                              isActive ? FontWeight.w600 : FontWeight.w500,
-                          color: isActive
-                              ?  primaryColor
-                              : (isDark ?  Colors.grey[500] : Colors.grey[600]),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      // Active indicator dot
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: isActive ? 4 : 0,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============ PREMIUM BANKING NAV (Like Private Banking Apps) ============
-class PremiumBankingNav extends StatefulWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-  final List<BankingNavItem> items;
-  final Color? activeColor;
-
-  const PremiumBankingNav({
-    super.key,
-    required this.currentIndex,
-    required this.onTap,
-    required this.items,
-    this.activeColor,
-  });
-
-  @override
-  State<PremiumBankingNav> createState() => _PremiumBankingNavState();
-}
-
-class _PremiumBankingNavState extends State<PremiumBankingNav> {
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = widget.activeColor ?? Theme.of(context).primaryColor;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF252525) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Container(
-        height: 70,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(widget.items.length, (index) {
-            final item = widget.items[index];
-            final isActive = widget.currentIndex == index;
-
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  widget.onTap(index);
-                },
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? primaryColor.withOpacity(0.1)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isActive ? item.activeIcon : item.icon,
-                        size: 22,
-                        color: isActive
-                            ? primaryColor
-                            : (isDark ? Colors.grey[400] : Colors.grey[500]),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight:
-                              isActive ? FontWeight.w600 : FontWeight.w400,
-                          color: isActive
-                              ? primaryColor
-                              : (isDark ? Colors.grey[400] : Colors.grey[500]),
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
-// ============ SLEEK BANKING NAV (iOS Style) ============
-class SleekBankingNav extends StatelessWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-  final List<BankingNavItem> items;
-  final Color? activeColor;
-
-  const SleekBankingNav({
-    super.key,
-    required this.currentIndex,
-    required this.onTap,
-    required this.items,
-    this.activeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = activeColor ?? Theme.of(context).primaryColor;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1C1C1E).withOpacity(0.94)
-            : Colors.white.withOpacity(0.94),
-        border: Border(
-          top: BorderSide(
-            color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-            width: 0.3,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              final isActive = currentIndex == index;
-
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onTap(index);
-                },
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Icon(
-                    isActive ? item.activeIcon : item.icon,
-                    size: 26,
-                    color: isActive
-                        ? primaryColor
-                        : (isDark ? Colors.grey[500] : Colors.grey[400]),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+//
 // ============ NAV ITEM MODEL ============
-class BankingNavItem {
+class BottomNavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
 
-  const BankingNavItem({
+  const BottomNavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,

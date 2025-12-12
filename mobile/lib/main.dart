@@ -9,24 +9,23 @@ import 'models/wallet.dart';
 import 'models/transaction.dart';
 import 'models/category.dart';
 import 'models/saving_goal.dart';
-import 'models/budget.dart';
 import 'models/recurring_transaction.dart';
+import 'models/user_profile.dart';
+import 'models/custom_notification.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/saving_provider.dart';
-import 'providers/budget_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/user_provider.dart';
+import 'providers/notification_provider.dart';
 import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize locale for DateFormat (Indonesia)
   await initializeDateFormatting('id_ID', null);
-
-  // Initialize Hive
   await Hive.initFlutter();
 
   // Register Adapters
@@ -36,24 +35,28 @@ void main() async {
   Hive.registerAdapter(TransactionModelAdapter());
   Hive.registerAdapter(CategoryModelAdapter());
   Hive.registerAdapter(SavingGoalAdapter());
-  Hive.registerAdapter(BudgetAdapter());
   Hive.registerAdapter(RecurringTypeAdapter());
   Hive.registerAdapter(RecurringTransactionAdapter());
+  Hive.registerAdapter(UserProfileAdapter());
+  Hive.registerAdapter(CustomNotificationAdapter());
 
   // Open Boxes
   await Hive.openBox<Wallet>('wallets');
   await Hive.openBox<TransactionModel>('transactions');
   await Hive.openBox<CategoryModel>('categories');
   await Hive.openBox<SavingGoal>('savings');
-  await Hive.openBox<Budget>('budgets');
   await Hive.openBox<RecurringTransaction>('recurring');
+  await Hive.openBox<UserProfile>('user_profile');
+  await Hive.openBox<CustomNotification>('custom_notifications');
   await Hive.openBox('settings');
 
   // Initialize Notifications
-  await NotificationService().initialize();
-  await NotificationService().scheduleDailyReminders();
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('Notification init error: $e');
+  }
 
-  // Lock orientation
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   runApp(
@@ -61,11 +64,12 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => SavingProvider()),
-        ChangeNotifierProvider(create: (_) => BudgetProvider()),
       ],
       child: const MoneyReportApp(),
     ),

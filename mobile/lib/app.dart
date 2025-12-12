@@ -7,7 +7,7 @@ import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/lock_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/home/home_screen.dart';
 
 class MoneyReportApp extends StatelessWidget {
   const MoneyReportApp({super.key});

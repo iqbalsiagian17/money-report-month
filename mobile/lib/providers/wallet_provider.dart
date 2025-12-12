@@ -32,7 +32,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> updateWallet(Wallet wallet) async {
-    await wallet.save();
+    await _box.put(wallet.id, wallet);
     notifyListeners();
   }
 

@@ -15,36 +15,45 @@ class SavingProvider extends ChangeNotifier {
 
   SavingGoal? getById(String id) {
     try {
-      return savings.firstWhere((s) => s.id == id);
-    } catch (e) {
+      return _box.get(id);
+    } catch (_) {
       return null;
     }
   }
 
+  // ================= ADD =================
   Future<void> addSaving(SavingGoal saving) async {
     await _box.put(saving.id, saving);
     notifyListeners();
   }
+  
 
+  // ================= UPDATE =================
   Future<void> updateSaving(SavingGoal saving) async {
-    await saving.save();
+    await _box.put(saving.id, saving);
     notifyListeners();
   }
 
+  // ================= DELETE =================
   Future<void> deleteSaving(String id) async {
     await _box.delete(id);
     notifyListeners();
   }
 
-  Future<void> addDeposit(String savingId, double amount) async {
-    final saving = getById(savingId);
-    if (saving != null) {
-      saving.currentAmount += amount;
-      if (saving.currentAmount >= saving.targetAmount) {
-        saving.isCompleted = true;
-      }
-      await saving.save();
-      notifyListeners();
+  // ================= DEPOSIT =================
+  Future<void> deposit(String savingId, double amount) async {
+    if (amount <= 0) return;
+
+    final saving = _box.get(savingId);
+    if (saving == null) return;
+
+    saving.currentAmount += amount;
+
+    if (saving.currentAmount >= saving.targetAmount) {
+      saving.isCompleted = true;
     }
+
+    await _box.put(saving.id, saving);
+    notifyListeners();
   }
 }

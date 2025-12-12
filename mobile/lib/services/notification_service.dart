@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
+import '../models/custom_notification.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -10,6 +11,12 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
+
+  String _userName = 'Pengguna';
+
+  void setUserName(String name) {
+    _userName = name;
+  }
 
   Future<void> initialize() async {
     tz_data.initializeTimeZones();
@@ -29,8 +36,6 @@ class NotificationService {
     );
 
     await _notifications.initialize(settings);
-
-    // Request permission untuk Android 13+
     await _requestPermissions();
   }
 
@@ -44,6 +49,56 @@ class NotificationService {
     }
   }
 
+  // ============ SCHEDULE DAILY REMINDERS (DEFAULT) ============
+  Future<void> scheduleDailyReminders() async {
+    // Cancel existing first
+    await cancelAll();
+
+    // Schedule default reminders
+    final defaultReminders = [
+      {
+        'id': 1,
+        'hour': 10,
+        'minute': 0,
+        'title': 'Pengingat Pagi',
+        'body':
+            'Selamat pagi $_userName!  Jangan lupa catat pengeluaran sarapan 🍳'
+      },
+      {
+        'id': 2,
+        'hour': 13,
+        'minute': 0,
+        'title': 'Pengingat Siang',
+        'body': 'Hai $_userName! Sudah makan siang? Catat pengeluaranmu 🍱'
+      },
+      {
+        'id': 3,
+        'hour': 17,
+        'minute': 0,
+        'title': 'Pengingat Sore',
+        'body': 'Sore $_userName! Ada pengeluaran yang belum dicatat?  📝'
+      },
+      {
+        'id': 4,
+        'hour': 20,
+        'minute': 0,
+        'title': 'Pengingat Malam',
+        'body': 'Malam $_userName! Yuk review keuangan hari ini 💰'
+      },
+    ];
+
+    for (final reminder in defaultReminders) {
+      await _scheduleDaily(
+        id: reminder['id'] as int,
+        hour: reminder['hour'] as int,
+        minute: reminder['minute'] as int,
+        title: reminder['title'] as String,
+        body: reminder['body'] as String,
+      );
+    }
+  }
+
+  // ============ INSTANT NOTIFICATION ============
   Future<void> showInstantNotification({
     required String title,
     required String body,
@@ -61,41 +116,33 @@ class NotificationService {
     await _notifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title,
-      body,
+      body.replaceAll('{nama}', _userName),
       details,
     );
   }
 
-  Future<void> scheduleDailyReminders() async {
-    await cancelAll();
-
-    final times = [
-      const TimeOfDay(hour: 10, minute: 0),
-      const TimeOfDay(hour: 13, minute: 0),
-      const TimeOfDay(hour: 17, minute: 0),
-      const TimeOfDay(hour: 20, minute: 0),
-    ];
-
-    final messages = [
-      'Pagi!  Jangan lupa catat pengeluaran sarapan 🍳',
-      'Sudah makan siang?  Catat pengeluaranmu!  🍱',
-      'Sore! Ada pengeluaran yang belum dicatat? 📝',
-      'Malam! Yuk review keuangan hari ini 💰',
-    ];
-
-    for (int i = 0; i < times.length; i++) {
-      await _scheduleDaily(
-        id: i,
-        time: times[i],
-        title: 'Money Report',
-        body: messages[i],
-      );
+  // ============ SCHEDULE CUSTOM NOTIFICATIONS ============
+  Future<void> scheduleCustomNotifications(
+      List<CustomNotification> notifs) async {
+    for (int i = 0; i < notifs.length; i++) {
+      final notif = notifs[i];
+      if (notif.isEnabled) {
+        await _scheduleDaily(
+          id: i + 100, // Offset ID untuk custom notifications
+          hour: notif.hour,
+          minute: notif.minute,
+          title: notif.title.replaceAll('{nama}', _userName),
+          body: notif.message.replaceAll('{nama}', _userName),
+        );
+      }
     }
   }
 
+  // ============ INTERNAL: SCHEDULE DAILY ============
   Future<void> _scheduleDaily({
     required int id,
-    required TimeOfDay time,
+    required int hour,
+    required int minute,
     required String title,
     required String body,
   }) async {
@@ -104,8 +151,8 @@ class NotificationService {
       now.year,
       now.month,
       now.day,
-      time.hour,
-      time.minute,
+      hour,
+      minute,
     );
 
     if (scheduledDate.isBefore(now)) {
@@ -122,39 +169,63 @@ class NotificationService {
 
     const details = NotificationDetails(android: androidDetails);
 
-    await _notifications.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      details,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
+    try {
+      await _notifications.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(scheduledDate, tz.local),
+        details,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } catch (e) {
+      debugPrint('Error scheduling notification: $e');
+    }
+  }
+
+  // ============ DAILY LIMIT NOTIFICATIONS ============
+  Future<void> showDailyLimitWarning({
+    required double spent,
+    required double limit,
+  }) async {
+    final percentage = (spent / limit * 100).round();
+
+    await showInstantNotification(
+      title: 'Peringatan Limit Harian!  ⚠️',
+      body:
+          'Hai $_userName, pengeluaranmu sudah $percentage% dari limit harian.',
     );
   }
 
+  Future<void> showDailyLimitExceeded({
+    required double spent,
+    required double limit,
+  }) async {
+    await showInstantNotification(
+      title: 'Limit Harian Terlampaui! 🚨',
+      body:
+          'Hai $_userName, kamu sudah melebihi limit harian.  Gunakan mode darurat jika perlu.',
+    );
+  }
+
+  // ============ BUDGET WARNING ============
   Future<void> showBudgetWarning(String categoryName, int percentage) async {
-    const androidDetails = AndroidNotificationDetails(
-      'budget_warning_channel',
-      'Budget Warnings',
-      channelDescription: 'Peringatan budget',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    const details = NotificationDetails(android: androidDetails);
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'Peringatan Budget!  ⚠️',
-      'Budget $categoryName sudah terpakai $percentage%',
-      details,
+    await showInstantNotification(
+      title: 'Peringatan Budget! ⚠️',
+      body: 'Hai $_userName, budget $categoryName sudah terpakai $percentage%',
     );
   }
 
+  // ============ CANCEL ALL ============
   Future<void> cancelAll() async {
     await _notifications.cancelAll();
+  }
+
+  // ============ CANCEL BY ID ============
+  Future<void> cancelById(int id) async {
+    await _notifications.cancel(id);
   }
 }

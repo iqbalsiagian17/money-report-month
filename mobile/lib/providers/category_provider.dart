@@ -7,6 +7,12 @@ class CategoryProvider extends ChangeNotifier {
 
   List<CategoryModel> get categories => _box.values.toList();
 
+  // Semua kategori dianggap expense (untuk limit settings)
+  List<CategoryModel> get expenseCategories => categories;
+
+  // Untuk income (kosong untuk sementara, atau filter manual)
+  List<CategoryModel> get incomeCategories => [];
+
   CategoryModel? getById(String id) {
     try {
       return categories.firstWhere((c) => c.id == id);
@@ -34,54 +40,84 @@ class CategoryProvider extends ChangeNotifier {
     if (categories.isEmpty) {
       final defaults = [
         CategoryModel(
-            id: 'food',
-            name: 'Makanan',
-            icon: '🍔',
-            colorValue: 0xFFFF6B6B,
-            isDefault: true),
+          id: 'food',
+          name: 'Makanan',
+          icon: '🍔',
+          colorValue: 0xFFFF6B6B,
+          isDefault: true,
+        ),
         CategoryModel(
-            id: 'transport',
-            name: 'Transportasi',
-            icon: '🚗',
-            colorValue: 0xFF4ECDC4,
-            isDefault: true),
+          id: 'snack',
+          name: 'Jajan',
+          icon: '🍿',
+          colorValue: 0xFFFFB347,
+          isDefault: true,
+        ),
         CategoryModel(
-            id: 'shopping',
-            name: 'Belanja',
-            icon: '🛍️',
-            colorValue: 0xFFFFE66D,
-            isDefault: true),
+          id: 'transport',
+          name: 'Transportasi',
+          icon: '🚗',
+          colorValue: 0xFF4ECDC4,
+          isDefault: true,
+        ),
         CategoryModel(
-            id: 'bills',
-            name: 'Tagihan',
-            icon: '📄',
-            colorValue: 0xFF95E1D3,
-            isDefault: true),
+          id: 'shopping',
+          name: 'Belanja',
+          icon: '🛍️',
+          colorValue: 0xFFFFE66D,
+          isDefault: true,
+        ),
         CategoryModel(
-            id: 'entertainment',
-            name: 'Hiburan',
-            icon: '🎮',
-            colorValue: 0xFFDDA0DD,
-            isDefault: true),
+          id: 'bills',
+          name: 'Tagihan',
+          icon: '📄',
+          colorValue: 0xFF95E1D3,
+          isDefault: true,
+        ),
         CategoryModel(
-            id: 'health',
-            name: 'Kesehatan',
-            icon: '💊',
-            colorValue: 0xFF98D8C8,
-            isDefault: true),
+          id: 'entertainment',
+          name: 'Hiburan',
+          icon: '🎮',
+          colorValue: 0xFFDDA0DD,
+          isDefault: true,
+        ),
         CategoryModel(
-            id: 'education',
-            name: 'Pendidikan',
-            icon: '📚',
-            colorValue: 0xFFAED6F1,
-            isDefault: true),
+          id: 'health',
+          name: 'Kesehatan',
+          icon: '💊',
+          colorValue: 0xFF98D8C8,
+          isDefault: true,
+        ),
         CategoryModel(
-            id: 'other',
-            name: 'Lainnya',
-            icon: '📦',
-            colorValue: 0xFFD5DBDB,
-            isDefault: true),
+          id: 'education',
+          name: 'Pendidikan',
+          icon: '📚',
+          colorValue: 0xFFAED6F1,
+          isDefault: true,
+        ),
+        CategoryModel(
+          id: 'investment',
+          name: 'Investasi',
+          icon: '📈',
+          colorValue: 0xFF85C1E9,
+          isDefault: true,
+        ),
+        CategoryModel(
+          id: 'donation',
+          name: 'Donasi',
+          icon: '❤️',
+          colorValue: 0xFFF1948A,
+          isDefault: true,
+        ),
+        CategoryModel(
+          id: 'other',
+          name: 'Lainnya',
+          icon: '📦',
+          colorValue: 0xFFD5DBDB,
+          isDefault: true,
+        ),
       ];
+
       for (var cat in defaults) {
         await addCategory(cat);
       }

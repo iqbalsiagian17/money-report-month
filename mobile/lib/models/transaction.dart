@@ -32,7 +32,7 @@ class TransactionModel extends HiveObject {
   DateTime dateTime;
 
   @HiveField(6)
-  String note;
+  String? note; // <- nullable
 
   TransactionModel({
     required this.id,
@@ -41,6 +41,6 @@ class TransactionModel extends HiveObject {
     required this.categoryId,
     required this.amount,
     required this.dateTime,
-    this.note = "",
+    this.note,
   });
 }

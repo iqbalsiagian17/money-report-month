@@ -1,404 +1,239 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:money_report_monthly/screens/saving/widgets/saving_form_fields.dart';
+import 'package:money_report_monthly/screens/saving/widgets/saving_header_icon.dart';
+import 'package:money_report_monthly/screens/saving/widgets/saving_options.dart';
+import 'package:money_report_monthly/screens/transaction/widgets/shared/currency_input_formatter.dart';
+import 'package:money_report_monthly/widgets/bottom_sheet/app_bottom_sheet.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import '../../config/routes.dart';
 import '../../models/saving_goal.dart';
 import '../../providers/saving_provider.dart';
 import '../../providers/wallet_provider.dart';
-import '../../widgets/progress_bar.dart';
+
+// Import widgets
+import 'widgets/saving_card.dart';
+import 'widgets/deposit_dialog.dart';
 
 class SavingListScreen extends StatelessWidget {
   const SavingListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tabungan Saya'),
-        actions: [
-          IconButton(
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.addSaving),
-            icon: const Icon(Icons.add),
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark, // ANDROID → ikon hitam
+        statusBarBrightness: Brightness.light, // IOS
       ),
-      body: Consumer<SavingProvider>(
-        builder: (context, provider, _) {
-          if (provider.savings.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.savings_outlined,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Belum ada target tabungan',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.addSaving),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Buat Target Baru'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              // Active Savings
-              if (provider.activeSavings.isNotEmpty) ...[
-                const Text(
-                  'Target Aktif',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                ...provider.activeSavings.map((saving) => _buildSavingCard(
-                  context,
-                  saving,
-                  currencyFormat,
-                )),
-                const SizedBox(height: 24),
-              ],
-
-              // Completed Savings
-              if (provider.completedSavings.isNotEmpty) ...[
-                const Text(
-                  'Target Tercapai 🎉',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                ...provider.completedSavings.map((saving) => _buildSavingCard(
-                  context,
-                  saving,
-                  currencyFormat,
-                )),
-              ],
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSavingCard(
-    BuildContext context,
-    SavingGoal saving,
-    NumberFormat format,
-  ) {
-    final walletProvider = context.read<WalletProvider>();
-    final wallet = walletProvider.getById(saving.walletId);
-    final progressPercent = (saving.progress * 100).round();
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () => _showSavingOptions(context, saving),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: saving.isCompleted
-                          ? Colors.green.withOpacity(0.1)
-                          : Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      saving.isCompleted ?  Icons.check_circle : Icons.savings,
-                      color: saving.isCompleted
-                          ? Colors.green
-                          : Theme.of(context).primaryColor,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          saving.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Sumber: ${wallet?.name ?? "Unknown"}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (saving.isCompleted)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Tercapai',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ProgressBar(
-                progress: saving.progress,
-                color: saving.isCompleted
-                    ? Colors.green
-                    : Theme.of(context).primaryColor,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    format.format(saving.currentAmount),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  Text(
-                    '$progressPercent%',
-                    style: TextStyle(
-                      color: saving.isCompleted
-                          ? Colors.green
-                          : Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    format.format(saving.targetAmount),
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-              if (! saving.isCompleted) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showDepositDialog(context, saving),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Setor Tabungan'),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showSavingOptions(BuildContext context, SavingGoal saving) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              saving.name,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 24),
-            if (! saving.isCompleted)
-              ListTile(
-                leading: const Icon(Icons.add_circle),
-                title: const Text('Setor Tabungan'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDepositDialog(context, saving);
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit Target'),
-              onTap: () {
-                Navigator.pop(context);
-                _showEditDialog(context, saving);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Hapus Target', style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDelete(context, saving);
-              },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Tabungan Saya'),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          actions: [
+            IconButton(
+              onPressed: () => _showAddSavingSheet(context),
+              icon: const Icon(Icons.add_rounded),
             ),
           ],
+        ),
+        body: Consumer2<SavingProvider, WalletProvider>(
+          builder: (context, savingProvider, walletProvider, _) {
+            return ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                // Active Savings
+                if (savingProvider.activeSavings.isNotEmpty) ...[
+                  _SectionHeader(
+                    title: 'Target Aktif',
+                    icon: Icons.flag_rounded,
+                    count: savingProvider.activeSavings.length,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 12),
+                  ...savingProvider.activeSavings.map(
+                    (saving) => SavingCard(
+                      saving: saving,
+                      wallet: walletProvider.getById(saving.walletId),
+                      onTap: () => SavingOptions.show(context, saving),
+                      onDeposit: () => _showDepositDialog(context, saving),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Completed Savings
+                if (savingProvider.completedSavings.isNotEmpty) ...[
+                  _SectionHeader(
+                    title: 'Target Tercapai',
+                    icon: Icons.check_circle_rounded,
+                    count: savingProvider.completedSavings.length,
+                    isDark: isDark,
+                    isCompleted: true,
+                  ),
+                  const SizedBox(height: 12),
+                  ...savingProvider.completedSavings.map(
+                    (saving) => SavingCard(
+                      saving: saving,
+                      wallet: walletProvider.getById(saving.walletId),
+                      onTap: () => SavingOptions.show(context, saving),
+                      onDeposit: () {},
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 80),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _showAddSavingSheet(context),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Target Baru'),
         ),
       ),
     );
   }
 
   void _showDepositDialog(BuildContext context, SavingGoal saving) {
-    final amountController = TextEditingController();
-    final currencyFormat = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Setor Tabungan'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Target: ${saving.name}',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-            Text(
-              'Sisa: ${currencyFormat.format(saving.remaining)}',
-              style: TextStyle(color: Colors.grey[600], fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Jumlah Setoran',
-                prefixText: 'Rp ',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+      builder: (context) => DepositDialog(saving: saving),
+    );
+  }
+}
+
+void _showAddSavingSheet(BuildContext context) {
+  final nameController = TextEditingController();
+  final targetController = TextEditingController();
+  String? selectedWalletId;
+  DateTime? targetDate;
+
+  AppBottomSheet.showForm<bool>(
+    context: context,
+    title: 'Target Tabungan Baru',
+    submitText: 'Simpan Target',
+    builder: (context, setState) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SavingHeaderIcon(),
+          const SizedBox(height: 24),
+          SavingNameField(controller: nameController),
+          const SizedBox(height: 16),
+          SavingTargetField(controller: targetController),
+          const SizedBox(height: 16),
+          Consumer<WalletProvider>(
+            builder: (context, walletProvider, _) {
+              return SavingWalletDropdown(
+                selectedWalletId: selectedWalletId,
+                wallets: walletProvider.wallets,
+                onChanged: (value) {
+                  setState(() => selectedWalletId = value);
+                },
+              );
+            },
           ),
-          ElevatedButton(
-            onPressed: () {
-              final amount = double.tryParse(amountController.text) ??  0;
-              if (amount > 0) {
-                // Potong saldo wallet
-                context.read<WalletProvider>().updateBalance(
-                  saving.walletId,
-                  -amount,
-                );
-                
-                // Tambah ke tabungan
-                context.read<SavingProvider>().addDeposit(saving.id, amount);
-                
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Berhasil menyetor ${currencyFormat.format(amount)}'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+          const SizedBox(height: 16),
+          SavingDatePicker(
+            selectedDate: targetDate,
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+              );
+              if (picked != null) {
+                setState(() => targetDate = picked);
               }
             },
-            child: const Text('Setor'),
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+    onSubmit: () async {
+      if (selectedWalletId == null) return null;
 
-  void _showEditDialog(BuildContext context, SavingGoal saving) {
-    final nameController = TextEditingController(text: saving.name);
-    final targetController = TextEditingController(
-      text: saving.targetAmount.toStringAsFixed(0),
-    );
+      final savingProvider = context.read<SavingProvider>();
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Target'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Nama Target'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: targetController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Target Nominal',
-                prefixText: 'Rp ',
-              ),
-            ),
-          ],
+      final targetAmount =
+          CurrencyInputFormatter.getNumericValue(targetController.text);
+
+      await savingProvider.addSaving(
+        SavingGoal(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: nameController.text.trim(),
+          targetAmount: targetAmount,
+          currentAmount: 0,
+          walletId: selectedWalletId!,
+          createdAt: DateTime.now(),
+          targetDate: targetDate,
+          isCompleted: false,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              saving.name = nameController.text;
-              saving.targetAmount = double.tryParse(targetController.text) ?? saving.targetAmount;
-              context.read<SavingProvider>().updateSaving(saving);
-              Navigator.pop(context);
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
-  }
+      );
 
-  void _confirmDelete(BuildContext context, SavingGoal saving) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Target? '),
-        content: Text('Apakah Anda yakin ingin menghapus "${saving.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+      return true; // ✅ penting → auto close bottom sheet
+    },
+  );
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final int count;
+  final bool isDark;
+  final bool isCompleted;
+
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    required this.count,
+    required this.isDark,
+    this.isCompleted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isCompleted ? Colors.green : Theme.of(context).primaryColor;
+
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: color),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
           ),
-          ElevatedButton(
-            onPressed: () {
-              context.read<SavingProvider>().deleteSaving(saving.id);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Hapus'),
-          ),
+        ),
+        if (isCompleted) ...[
+          const SizedBox(width: 6),
+          const Text('🎉', style: TextStyle(fontSize: 16)),
         ],
-      ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

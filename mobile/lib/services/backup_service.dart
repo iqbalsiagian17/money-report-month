@@ -11,7 +11,6 @@ import '../models/wallet.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
 import '../models/saving_goal.dart';
-import '../models/budget.dart';
 import '../models/recurring_transaction.dart';
 
 class BackupService {
@@ -25,7 +24,6 @@ class BackupService {
     final transactionsBox = Hive.box<TransactionModel>('transactions');
     final categoriesBox = Hive.box<CategoryModel>('categories');
     final savingsBox = Hive.box<SavingGoal>('savings');
-    final budgetsBox = Hive.box<Budget>('budgets');
     final recurringBox = Hive.box<RecurringTransaction>('recurring');
     final settingsBox = Hive.box('settings');
 
@@ -37,7 +35,6 @@ class BackupService {
           transactionsBox.values.map((t) => _transactionToMap(t)).toList(),
       'categories': categoriesBox.values.map((c) => _categoryToMap(c)).toList(),
       'savings': savingsBox.values.map((s) => _savingToMap(s)).toList(),
-      'budgets': budgetsBox.values.map((b) => _budgetToMap(b)).toList(),
       'recurring': recurringBox.values.map((r) => _recurringToMap(r)).toList(),
       'settings': {
         'isDarkMode': settingsBox.get('isDarkMode', defaultValue: false),
@@ -139,7 +136,6 @@ class BackupService {
     await Hive.box<TransactionModel>('transactions').clear();
     await Hive.box<CategoryModel>('categories').clear();
     await Hive.box<SavingGoal>('savings').clear();
-    await Hive.box<Budget>('budgets').clear();
     await Hive.box<RecurringTransaction>('recurring').clear();
 
     // Import Wallets
@@ -175,15 +171,6 @@ class BackupService {
       for (final item in data['savings']) {
         final saving = _mapToSaving(item);
         await box.put(saving.id, saving);
-      }
-    }
-
-    // Import Budgets
-    if (data['budgets'] != null) {
-      final box = Hive.box<Budget>('budgets');
-      for (final item in data['budgets']) {
-        final budget = _mapToBudget(item);
-        await box.put(budget.id, budget);
       }
     }
 
@@ -287,23 +274,6 @@ class BackupService {
         targetDate:
             m['targetDate'] != null ? DateTime.parse(m['targetDate']) : null,
         isCompleted: m['isCompleted'] ?? false,
-      );
-
-  // ============ BUDGET CONVERTERS ============
-  Map<String, dynamic> _budgetToMap(Budget b) => {
-        'id': b.id,
-        'categoryId': b.categoryId,
-        'limitAmount': b.limitAmount,
-        'month': b.month,
-        'year': b.year,
-      };
-
-  Budget _mapToBudget(Map<String, dynamic> m) => Budget(
-        id: m['id'],
-        categoryId: m['categoryId'],
-        limitAmount: (m['limitAmount'] as num).toDouble(),
-        month: m['month'],
-        year: m['year'],
       );
 
   // ============ RECURRING CONVERTERS ============
