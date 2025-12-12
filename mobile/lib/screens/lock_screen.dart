@@ -28,13 +28,13 @@ class _LockScreenState extends State<LockScreen> {
   }
 
   void _onKeyPressed(String key) {
-    if (_pin.length < 6) {
+    if (_pin.length < 4) {
       setState(() {
         _pin += key;
         _error = null;
       });
 
-      if (_pin.length == 6) {
+      if (_pin.length == 4) {
         _verifyPin();
       }
     }
@@ -82,7 +82,7 @@ class _LockScreenState extends State<LockScreen> {
               const SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(6, (index) {
+                children: List.generate(4, (index) {
                   return Container(
                     width: 16,
                     height: 16,

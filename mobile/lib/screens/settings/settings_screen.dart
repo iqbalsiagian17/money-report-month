@@ -5,327 +5,369 @@ import '../../config/routes.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/user_provider.dart';
-import '../../services/notification_service.dart';
-import 'backup_screen.dart';
+import 'backup_screen.dart'; // Direct import for backup
 
 // Import widgets
-import 'widgets/settings/profile_section.dart';
-import 'widgets/settings/setting_card.dart';
-import 'widgets/settings/color_picker_dialog.dart';
-import 'widgets/settings/pin_dialog.dart';
-import 'widgets/settings/reset_data_dialog.dart';
+import 'widgets/settings/settings_header.dart';
+import 'widgets/settings/settings_tile.dart';
+import 'widgets/settings/settings_section.dart';
+import 'widgets/settings/settings_options.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationEnabled = true;
+    return Scaffold(
+      body: Consumer3<ThemeProvider, AuthProvider, UserProvider>(
+        builder: (context, themeProvider, authProvider, userProvider, _) {
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Header
+              SliverToBoxAdapter(
+                child: SettingsHeader(userProvider: userProvider),
+              ),
+
+              // Settings Content
+              SliverPadding(
+                padding: const EdgeInsets.all(20),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // Quick Settings
+                    _QuickSettings(
+                      themeProvider: themeProvider,
+                      authProvider: authProvider,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Data & Management
+                    SettingsSection(
+                      title: 'Kelola Data',
+                      children: [
+                        SettingsTile(
+                          icon: Icons.account_balance_wallet_rounded,
+                          iconColor: Colors.blue,
+                          title: 'Dompet',
+                          subtitle: 'Kelola saldo & dompet',
+                          onTap: () =>
+                              Navigator.pushNamed(context, AppRoutes.wallets),
+                        ),
+                        SettingsTile(
+                          icon: Icons.category_rounded,
+                          iconColor: Colors.purple,
+                          title: 'Kategori',
+                          subtitle: 'Atur kategori transaksi',
+                          onTap: () => Navigator.pushNamed(
+                              context, AppRoutes.categories),
+                        ),
+                        SettingsTile(
+                          icon: Icons.repeat_rounded,
+                          iconColor: Colors.orange,
+                          title: 'Transaksi Rutin',
+                          subtitle: 'Pemasukan & pengeluaran otomatis',
+                          onTap: () =>
+                              Navigator.pushNamed(context, AppRoutes.recurring),
+                        ),
+                        SettingsTile(
+                          icon: Icons.savings_rounded,
+                          iconColor: Colors.green,
+                          title: 'Target Tabungan',
+                          subtitle: 'Kelola goal keuangan',
+                          onTap: () =>
+                              Navigator.pushNamed(context, AppRoutes.savings),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Preferences
+                    SettingsSection(
+                      title: 'Preferensi',
+                      children: [
+                        SettingsTile(
+                          icon: Icons.tune_rounded,
+                          iconColor: Colors.teal,
+                          title: 'Pengaturan Limit',
+                          subtitle: _getLimitSummary(userProvider),
+                          onTap: () => Navigator.pushNamed(
+                              context, AppRoutes.limitSettings),
+                        ),
+                        SettingsTile(
+                          icon: Icons.notifications_rounded,
+                          iconColor: Colors.amber,
+                          title: 'Notifikasi',
+                          subtitle: 'Atur pengingat keuangan',
+                          onTap: () => Navigator.pushNamed(
+                              context, AppRoutes.notificationSettings),
+                        ),
+                        SettingsTile(
+                          icon: Icons.palette_rounded,
+                          iconColor: Colors.pink,
+                          title: 'Tampilan',
+                          subtitle: 'Tema & warna aplikasi',
+                          trailing:
+                              _ColorDot(color: themeProvider.primaryColor),
+                          onTap: () => SettingsOptions.showAppearance(
+                              context, themeProvider),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Security & Backup
+                    SettingsSection(
+                      title: 'Keamanan',
+                      children: [
+                        SettingsTile(
+                          icon: Icons.lock_rounded,
+                          iconColor: Colors.indigo,
+                          title: 'Kunci Aplikasi',
+                          subtitle: authProvider.isLockEnabled
+                              ? 'PIN aktif'
+                              : 'Nonaktif',
+                          trailing: _StatusBadge(
+                              isActive: authProvider.isLockEnabled),
+                          onTap: () => SettingsOptions.showSecurity(
+                              context, authProvider),
+                        ),
+                        SettingsTile(
+                          icon: Icons.backup_rounded,
+                          iconColor: Colors.cyan,
+                          title: 'Backup & Restore',
+                          subtitle: 'Export dan import data',
+                          onTap: () {
+                            // Direct navigation to BackupScreen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const BackupScreen()),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // About
+                    SettingsSection(
+                      title: 'Lainnya',
+                      children: [
+                        SettingsTile(
+                          icon: Icons.info_rounded,
+                          iconColor: Colors.grey,
+                          title: 'Tentang Aplikasi',
+                          subtitle: 'Versi 1.0.0',
+                          onTap: () => SettingsOptions.showAbout(context),
+                        ),
+                        SettingsTile(
+                          icon: Icons.delete_forever_rounded,
+                          iconColor: Colors.red,
+                          title: 'Reset Data',
+                          subtitle: 'Hapus semua data',
+                          onTap: () =>
+                              SettingsOptions.showResetConfirm(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 100),
+                  ]),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
   String _getLimitSummary(UserProvider userProvider) {
     final parts = <String>[];
-    if (userProvider.isDailyLimitEnabled) {
-      parts.add('Harian aktif');
-    }
-    if (userProvider.isWeekendLimitEnabled) {
-      parts.add('Weekend aktif');
-    }
-    if (parts.isEmpty) {
-      return 'Belum ada limit aktif';
-    }
-    return parts.join(' • ');
+    if (userProvider.isDailyLimitEnabled) parts.add('Harian');
+    if (userProvider.isWeekendLimitEnabled) parts.add('Weekend');
+    if (parts.isEmpty) return 'Belum ada limit aktif';
+    return '${parts.join(' & ')} aktif';
   }
+}
 
-  @override
+// ================= QUICK SETTINGS =================
+class _QuickSettings extends StatelessWidget {
+  final ThemeProvider themeProvider;
+  final AuthProvider authProvider;
+
+  const _QuickSettings({
+    required this.themeProvider,
+    required this.authProvider,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // ANDROID
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Pengaturan'),
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 0,
-        ),
-        body: Consumer3<ThemeProvider, AuthProvider, UserProvider>(
-          builder: (context, themeProvider, authProvider, userProvider, _) {
-            return ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                // Profile Section
-                ProfileSection(userProvider: userProvider),
-                const SizedBox(height: 24),
+      child: Row(
+        children: [
+          _QuickSettingButton(
+            icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+            label: isDark ? 'Light' : 'Dark',
+            isActive: isDark,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              themeProvider.toggleTheme();
+            },
+          ),
+          _QuickSettingButton(
+            icon: authProvider.isLockEnabled
+                ? Icons.lock_rounded
+                : Icons.lock_open_rounded,
+            label: authProvider.isLockEnabled ? 'Locked' : 'Unlocked',
+            isActive: authProvider.isLockEnabled,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              SettingsOptions.showSecurity(context, authProvider);
+            },
+          ),
+          _QuickSettingButton(
+            icon: Icons.notifications_rounded,
+            label: 'Notif',
+            isActive: true,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.pushNamed(context, AppRoutes.notificationSettings);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                // Appearance
-                const SettingSectionTitle(title: 'Tampilan'),
-                const SizedBox(height: 12),
-                _buildAppearanceCard(context, themeProvider),
-                const SizedBox(height: 24),
+class _QuickSettingButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
 
-                // Security
-                const SettingSectionTitle(title: 'Keamanan'),
-                const SizedBox(height: 12),
-                _buildSecurityCard(context, authProvider),
-                const SizedBox(height: 24),
+  const _QuickSettingButton({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
 
-                // Data Management
-                const SettingSectionTitle(title: 'Data & Limit'),
-                const SizedBox(height: 12),
-                _buildDataCard(context, userProvider),
-                const SizedBox(height: 24),
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-                // Notifications
-                const SettingSectionTitle(title: 'Notifikasi'),
-                const SizedBox(height: 12),
-                _buildNotificationCard(context),
-                const SizedBox(height: 24),
-
-                // About
-                const SettingSectionTitle(title: 'Tentang'),
-                const SizedBox(height: 12),
-                _buildAboutCard(context),
-                const SizedBox(height: 80),
-              ],
-            );
-          },
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isActive
+                ? Theme.of(context).primaryColor.withOpacity(0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: isActive
+                    ? Theme.of(context).primaryColor
+                    : (isDark ? Colors.grey[400] : Colors.grey[600]),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isActive
+                      ? Theme.of(context).primaryColor
+                      : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildAppearanceCard(
-      BuildContext context, ThemeProvider themeProvider) {
-    return SettingCard(
-      children: [
-        SwitchListTile(
-          title: const Text('Mode Gelap'),
-          subtitle: const Text('Aktifkan dark mode'),
-          secondary: const Icon(Icons.dark_mode),
-          value: themeProvider.isDarkMode,
-          onChanged: (value) => themeProvider.toggleTheme(),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.palette),
-          title: const Text('Warna Tema'),
-          subtitle: const Text('Pilih warna utama aplikasi'),
-          trailing: Container(
-            width: 24,
-            height: 24,
+// ================= HELPER WIDGETS =================
+class _ColorDot extends StatelessWidget {
+  final Color color;
+
+  const _ColorDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final bool isActive;
+
+  const _StatusBadge({required this.isActive});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Colors.green.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
             decoration: BoxDecoration(
-              color: themeProvider.primaryColor,
+              color: isActive ? Colors.green : Colors.grey,
               shape: BoxShape.circle,
             ),
           ),
-          onTap: () => _showColorPicker(context, themeProvider),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSecurityCard(BuildContext context, AuthProvider authProvider) {
-    return SettingCard(
-      children: [
-        SwitchListTile(
-          title: const Text('Kunci Aplikasi'),
-          subtitle: Text(authProvider.isLockEnabled
-              ? 'Aplikasi terkunci dengan PIN'
-              : 'Nonaktif'),
-          secondary: const Icon(Icons.lock),
-          value: authProvider.isLockEnabled,
-          onChanged: (value) {
-            if (value) {
-              _showSetPinDialog(context);
-            } else {
-              authProvider.removePin();
-            }
-          },
-        ),
-        if (authProvider.isLockEnabled) ...[
-          const Divider(height: 1),
-          SwitchListTile(
-            title: const Text('Sidik Jari'),
-            subtitle: const Text('Gunakan fingerprint untuk membuka'),
-            secondary: const Icon(Icons.fingerprint),
-            value: authProvider.useBiometric,
-            onChanged: (value) => authProvider.setUseBiometric(value),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.password),
-            title: const Text('Ubah PIN'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showSetPinDialog(context),
+          const SizedBox(width: 4),
+          Text(
+            isActive ? 'ON' : 'OFF',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: isActive ? Colors.green : Colors.grey,
+            ),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _buildDataCard(BuildContext context, UserProvider userProvider) {
-    return SettingCard(
-      children: [
-        ListTile(
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.tune, color: Colors.blue),
-          ),
-          title: const Text('Pengaturan Limit'),
-          subtitle: Text(
-            _getLimitSummary(userProvider),
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.pushNamed(context, AppRoutes.limitSettings),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.category),
-          title: const Text('Kelola Kategori'),
-          subtitle: const Text('Tambah, edit, hapus kategori'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.pushNamed(context, AppRoutes.categories),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.account_balance_wallet),
-          title: const Text('Kelola Dompet'),
-          subtitle: const Text('Atur dompet dan saldo'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.pushNamed(context, AppRoutes.wallets),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.repeat),
-          title: const Text('Transaksi Rutin'),
-          subtitle: const Text('Atur pemasukan/pengeluaran otomatis'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.pushNamed(context, AppRoutes.recurring),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.purple.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.backup, color: Colors.purple.shade700),
-          ),
-          title: const Text('Backup & Restore'),
-          subtitle: const Text('Export dan import data'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const BackupScreen()),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNotificationCard(BuildContext context) {
-    return SettingCard(
-      children: [
-        SwitchListTile(
-          title: const Text('Pengingat Harian'),
-          subtitle: const Text('Reminder jam 10, 13, 17, 20'),
-          secondary: const Icon(Icons.notifications),
-          value: _notificationEnabled,
-          onChanged: (value) async {
-            setState(() => _notificationEnabled = value);
-            if (value) {
-              await NotificationService().scheduleDailyReminders();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Pengingat harian diaktifkan')),
-                );
-              }
-            } else {
-              await NotificationService().cancelAll();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Pengingat harian dinonaktifkan')),
-                );
-              }
-            }
-          },
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.edit_notifications),
-          title: const Text('Atur Notifikasi Custom'),
-          subtitle: const Text('Tambah pengingat sendiri'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () =>
-              Navigator.pushNamed(context, AppRoutes.notificationSettings),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAboutCard(BuildContext context) {
-    return SettingCard(
-      children: [
-        const ListTile(
-          leading: Icon(Icons.info),
-          title: Text('Versi Aplikasi'),
-          subtitle: Text('1.0.0'),
-        ),
-        const Divider(height: 1),
-        const ListTile(
-          leading: Icon(Icons.code),
-          title: Text('Dibuat dengan'),
-          subtitle: Text('Flutter & Hive'),
-        ),
-        const Divider(height: 1),
-        ListTile(
-          leading: const Icon(Icons.delete_forever, color: Colors.red),
-          title: const Text(
-            'Reset Semua Data',
-            style: TextStyle(color: Colors.red),
-          ),
-          subtitle: const Text('Hapus semua data aplikasi'),
-          onTap: () => _showResetDialog(context),
-        ),
-      ],
-    );
-  }
-
-  void _showColorPicker(BuildContext context, ThemeProvider themeProvider) {
-    showDialog(
-      context: context,
-      builder: (context) => ColorPickerDialog(themeProvider: themeProvider),
-    );
-  }
-
-  void _showSetPinDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const SetPinDialog(),
-    );
-  }
-
-  void _showResetDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const ResetDataDialog(),
+      ),
     );
   }
 }
