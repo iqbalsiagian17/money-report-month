@@ -7,7 +7,11 @@ class WalletProvider extends ChangeNotifier {
 
   List<Wallet> get wallets => _box.values.toList();
 
-  double get totalBalance => wallets.fold(0, (sum, w) => sum + w.balance);
+  double get totalBalance {
+    return wallets
+        .where((w) => !w.excludeFromTotal)
+        .fold(0.0, (sum, w) => sum + w.balance);
+  }
 
   List<Wallet> get cashWallets =>
       wallets.where((w) => w.type == WalletType.cash).toList();
@@ -69,6 +73,13 @@ class WalletProvider extends ChangeNotifier {
         name: 'GoPay',
         type: WalletType.emoney,
         icon: '📱',
+      ));
+      await addWallet(Wallet(
+        id: 'emergency_default',
+        name: 'Dana Darurat',
+        type: WalletType.bank,
+        icon: '🛟',
+        excludeFromTotal: true, // 🔥 penting
       ));
     }
   }

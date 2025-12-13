@@ -8,22 +8,28 @@ class UserProvider extends ChangeNotifier {
   bool _isInitialized = false;
 
   // Getters
-  UserProfile?  get profile => _profile;
+  UserProfile? get profile => _profile;
   bool get isInitialized => _isInitialized;
   String get userName => _profile?.name ?? 'Pengguna';
-  
+
   // Daily Limit
-  double get dailyLimit => _profile?.dailyLimit ??  100000.0;
+  double get dailyLimit => _profile?.dailyLimit ?? 100000.0;
   bool get isDailyLimitEnabled => _profile?.isDailyLimitEnabled ?? false;
   List<String> get dailyLimitCategories => _profile?.dailyLimitCategories ?? [];
 
   // Weekend Limit
-  double get weekendLimit => _profile?. weekendLimit ?? 300000.0;
+  double get weekendLimit => _profile?.weekendLimit ?? 300000.0;
   bool get isWeekendLimitEnabled => _profile?.isWeekendLimitEnabled ?? false;
-  List<String> get weekendLimitCategories => _profile?.weekendLimitCategories ?? [];
+  List<String> get weekendLimitCategories =>
+      _profile?.weekendLimitCategories ?? [];
 
   // Unlimited Categories
-  List<String> get unlimitedCategories => _profile?.unlimitedCategories ??  [];
+  List<String> get unlimitedCategories => _profile?.unlimitedCategories ?? [];
+
+  String? get photoPath => _profile?.photoPath;
+
+  bool get hasPhoto =>
+      _profile?.photoPath != null && _profile!.photoPath!.isNotEmpty;
 
   UserProvider() {
     _init();
@@ -32,7 +38,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> _init() async {
     try {
       _box = Hive.box<UserProfile>('user_profile');
-      if (_box != null && _box! .isNotEmpty) {
+      if (_box != null && _box!.isNotEmpty) {
         _profile = _box!.getAt(0);
       }
       _isInitialized = true;
@@ -54,7 +60,7 @@ class UserProvider extends ChangeNotifier {
         isWeekendLimitEnabled: false,
       );
       if (_box != null) {
-        await _box!.add(_profile! );
+        await _box!.add(_profile!);
       }
     }
   }
@@ -69,12 +75,14 @@ class UserProvider extends ChangeNotifier {
   }) async {
     await _ensureProfileExists();
 
-    _profile! .name = name;
+    _profile!.name = name;
     if (dailyLimit != null) _profile!.dailyLimit = dailyLimit;
-    if (isDailyLimitEnabled != null) _profile!.isDailyLimitEnabled = isDailyLimitEnabled;
-    if (weekendLimit != null) _profile!. weekendLimit = weekendLimit;
-    if (isWeekendLimitEnabled != null) _profile!.isWeekendLimitEnabled = isWeekendLimitEnabled;
-    
+    if (isDailyLimitEnabled != null)
+      _profile!.isDailyLimitEnabled = isDailyLimitEnabled;
+    if (weekendLimit != null) _profile!.weekendLimit = weekendLimit;
+    if (isWeekendLimitEnabled != null)
+      _profile!.isWeekendLimitEnabled = isWeekendLimitEnabled;
+
     await _profile!.save();
     notifyListeners();
   }
@@ -82,7 +90,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> setName(String name) async {
     await _ensureProfileExists();
     _profile!.name = name;
-    await _profile!. save();
+    await _profile!.save();
     notifyListeners();
   }
 
@@ -111,11 +119,11 @@ class UserProvider extends ChangeNotifier {
   Future<void> addDailyLimitCategory(String categoryId) async {
     await _ensureProfileExists();
     if (!_profile!.dailyLimitCategories.contains(categoryId)) {
-      _profile!. dailyLimitCategories.add(categoryId);
+      _profile!.dailyLimitCategories.add(categoryId);
       // Hapus dari kategori lain jika ada
       _profile!.weekendLimitCategories.remove(categoryId);
-      _profile! .unlimitedCategories.remove(categoryId);
-      await _profile! .save();
+      _profile!.unlimitedCategories.remove(categoryId);
+      await _profile!.save();
       notifyListeners();
     }
   }
@@ -137,8 +145,8 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> toggleWeekendLimit(bool enabled) async {
     await _ensureProfileExists();
-    _profile!. isWeekendLimitEnabled = enabled;
-    await _profile! .save();
+    _profile!.isWeekendLimitEnabled = enabled;
+    await _profile!.save();
     notifyListeners();
   }
 
@@ -152,9 +160,9 @@ class UserProvider extends ChangeNotifier {
   Future<void> addWeekendLimitCategory(String categoryId) async {
     await _ensureProfileExists();
     if (!_profile!.weekendLimitCategories.contains(categoryId)) {
-      _profile! .weekendLimitCategories. add(categoryId);
+      _profile!.weekendLimitCategories.add(categoryId);
       // Hapus dari kategori lain jika ada
-      _profile! .dailyLimitCategories. remove(categoryId);
+      _profile!.dailyLimitCategories.remove(categoryId);
       _profile!.unlimitedCategories.remove(categoryId);
       await _profile!.save();
       notifyListeners();
@@ -171,18 +179,18 @@ class UserProvider extends ChangeNotifier {
   // ============ UNLIMITED CATEGORIES ============
   Future<void> setUnlimitedCategories(List<String> categoryIds) async {
     await _ensureProfileExists();
-    _profile!. unlimitedCategories = categoryIds;
-    await _profile!. save();
+    _profile!.unlimitedCategories = categoryIds;
+    await _profile!.save();
     notifyListeners();
   }
 
   Future<void> addUnlimitedCategory(String categoryId) async {
     await _ensureProfileExists();
-    if (!_profile!. unlimitedCategories.contains(categoryId)) {
-      _profile!.unlimitedCategories. add(categoryId);
+    if (!_profile!.unlimitedCategories.contains(categoryId)) {
+      _profile!.unlimitedCategories.add(categoryId);
       // Hapus dari kategori lain jika ada
-      _profile! .dailyLimitCategories.remove(categoryId);
-      _profile! .weekendLimitCategories. remove(categoryId);
+      _profile!.dailyLimitCategories.remove(categoryId);
+      _profile!.weekendLimitCategories.remove(categoryId);
       await _profile!.save();
       notifyListeners();
     }
@@ -195,8 +203,22 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setPhotoPath(String? path) async {
+    await _ensureProfileExists();
+    _profile!.photoPath = path;
+    await _profile!.save();
+    notifyListeners();
+  }
+
+  Future<void> removePhoto() async {
+    await _ensureProfileExists();
+    _profile!.photoPath = null;
+    await _profile!.save();
+    notifyListeners();
+  }
+
   // ============ HELPER METHODS ============
-  
+
   /// Cek apakah kategori termasuk limit harian
   bool isCategoryDailyLimited(String categoryId) {
     return dailyLimitCategories.contains(categoryId);
@@ -215,7 +237,7 @@ class UserProvider extends ChangeNotifier {
   /// Cek apakah hari ini weekend (Sabtu/Minggu)
   bool isWeekend() {
     final now = DateTime.now();
-    return now.weekday == DateTime.saturday || now.weekday == DateTime. sunday;
+    return now.weekday == DateTime.saturday || now.weekday == DateTime.sunday;
   }
 
   /// Get limit type untuk kategori tertentu

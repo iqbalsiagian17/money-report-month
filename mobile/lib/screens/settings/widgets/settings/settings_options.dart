@@ -9,6 +9,8 @@ import '../../../../models/user_profile.dart';
 import '../../../../widgets/bottom_sheet/app_bottom_sheet.dart';
 import '../../../../widgets/bottom_sheet/variants/options_bottom_sheet.dart';
 import '../../../../widgets/bottom_sheet/variants/info_bottom_sheet.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class SettingsOptions {
   SettingsOptions._();
@@ -360,6 +362,8 @@ class SettingsOptions {
     final nameController =
         TextEditingController(text: userProvider.profile?.name);
 
+    File? selectedImage;
+
     AppBottomSheet.showForm<bool>(
       context: context,
       title: 'Edit Profil',
@@ -367,28 +371,100 @@ class SettingsOptions {
       submitText: 'Simpan',
       builder: (context, setState) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final photoPath = userProvider.profile?.photoPath;
 
         return Column(
           children: [
-            // Avatar
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).primaryColor,
-                    Theme.of(context).primaryColor.withOpacity(0.7),
+            // ===== AVATAR =====
+            GestureDetector(
+              onTap: () async {
+                final source = await AppBottomSheet.showOptions<ImageSource>(
+                  context: context,
+                  title: 'Foto Profil',
+                  options: const [
+                    BottomSheetOption(
+                      title: 'Ambil dari Kamera',
+                      icon: Icons.camera_alt_rounded,
+                      value: ImageSource.camera,
+                    ),
+                    BottomSheetOption(
+                      title: 'Pilih dari Galeri',
+                      icon: Icons.photo_library_rounded,
+                      value: ImageSource.gallery,
+                    ),
                   ],
-                ),
-                borderRadius: BorderRadius.circular(24),
+                );
+
+                if (source == null) return;
+
+                final picker = ImagePicker();
+                final picked = await picker.pickImage(
+                  source: source,
+                  imageQuality: 75,
+                );
+
+                if (picked != null) {
+                  setState(() {
+                    selectedImage = File(picked.path);
+                  });
+                }
+              },
+              child: Stack(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).primaryColor,
+                          Theme.of(context).primaryColor.withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: selectedImage != null
+                          ? Image.file(
+                              selectedImage!,
+                              fit: BoxFit.cover,
+                            )
+                          : photoPath != null
+                              ? Image.file(
+                                  File(photoPath),
+                                  fit: BoxFit.cover,
+                                )
+                              : const Icon(
+                                  Icons.person_rounded,
+                                  color: Colors.white,
+                                  size: 40,
+                                ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.person_rounded,
-                  color: Colors.white, size: 40),
             ),
+
             const SizedBox(height: 24),
 
-            // Name Field
+            // ===== NAME FIELD =====
             TextField(
               controller: nameController,
               textCapitalization: TextCapitalization.words,
@@ -413,8 +489,13 @@ class SettingsOptions {
           return null;
         }
 
-        // Fixed: Update profile dengan cara yang benar
+        // update nama
         await userProvider.setName(nameController.text.trim());
+
+        // update foto (jika ada)
+        if (selectedImage != null) {
+          await userProvider.setPhotoPath(selectedImage!.path);
+        }
 
         if (context.mounted) {
           _showSuccess(context, 'Profil berhasil diupdate');

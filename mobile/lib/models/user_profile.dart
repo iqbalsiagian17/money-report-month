@@ -7,32 +7,37 @@ class UserProfile extends HiveObject {
   @HiveField(0)
   String name;
 
+  // ⭐ FOTO PROFIL (BARU)
   @HiveField(1)
-  double dailyLimit;
+  String? photoPath; // local path / asset / url
 
   @HiveField(2)
-  bool isDailyLimitEnabled;
+  double dailyLimit;
 
   @HiveField(3)
-  DateTime createdAt;
+  bool isDailyLimitEnabled;
 
   @HiveField(4)
-  double weekendLimit;
+  DateTime createdAt;
 
   @HiveField(5)
-  bool isWeekendLimitEnabled;
+  double weekendLimit;
 
   @HiveField(6)
-  List<String> dailyLimitCategories; // Kategori yang kena limit harian
+  bool isWeekendLimitEnabled;
 
   @HiveField(7)
-  List<String> weekendLimitCategories; // Kategori yang kena limit weekend
+  List<String> dailyLimitCategories;
 
   @HiveField(8)
-  List<String> unlimitedCategories; // Kategori tanpa limit
+  List<String> weekendLimitCategories;
+
+  @HiveField(9)
+  List<String> unlimitedCategories;
 
   UserProfile({
     required this.name,
+    this.photoPath,
     this.dailyLimit = 100000,
     this.isDailyLimitEnabled = false,
     this.weekendLimit = 300000,

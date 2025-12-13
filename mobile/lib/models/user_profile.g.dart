@@ -18,38 +18,41 @@ class UserProfileAdapter extends TypeAdapter<UserProfile> {
     };
     return UserProfile(
       name: fields[0] as String,
-      dailyLimit: fields[1] as double,
-      isDailyLimitEnabled: fields[2] as bool,
-      weekendLimit: fields[4] as double,
-      isWeekendLimitEnabled: fields[5] as bool,
-      dailyLimitCategories: (fields[6] as List?)?.cast<String>(),
-      weekendLimitCategories: (fields[7] as List?)?.cast<String>(),
-      unlimitedCategories: (fields[8] as List?)?.cast<String>(),
-      createdAt: fields[3] as DateTime?,
+      photoPath: fields[1] as String?,
+      dailyLimit: fields[2] as double,
+      isDailyLimitEnabled: fields[3] as bool,
+      weekendLimit: fields[5] as double,
+      isWeekendLimitEnabled: fields[6] as bool,
+      dailyLimitCategories: (fields[7] as List?)?.cast<String>(),
+      weekendLimitCategories: (fields[8] as List?)?.cast<String>(),
+      unlimitedCategories: (fields[9] as List?)?.cast<String>(),
+      createdAt: fields[4] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserProfile obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.dailyLimit)
+      ..write(obj.photoPath)
       ..writeByte(2)
-      ..write(obj.isDailyLimitEnabled)
+      ..write(obj.dailyLimit)
       ..writeByte(3)
-      ..write(obj.createdAt)
+      ..write(obj.isDailyLimitEnabled)
       ..writeByte(4)
-      ..write(obj.weekendLimit)
+      ..write(obj.createdAt)
       ..writeByte(5)
-      ..write(obj.isWeekendLimitEnabled)
+      ..write(obj.weekendLimit)
       ..writeByte(6)
-      ..write(obj.dailyLimitCategories)
+      ..write(obj.isWeekendLimitEnabled)
       ..writeByte(7)
-      ..write(obj.weekendLimitCategories)
+      ..write(obj.dailyLimitCategories)
       ..writeByte(8)
+      ..write(obj.weekendLimitCategories)
+      ..writeByte(9)
       ..write(obj.unlimitedCategories);
   }
 

@@ -207,6 +207,7 @@ class _EmptyTransactions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -224,7 +225,7 @@ class _EmptyTransactions extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 64,
+            width: 120,
             height: 64,
             decoration: BoxDecoration(
               color: isDark ? Colors.grey[850] : Colors.grey[100],

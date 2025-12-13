@@ -32,6 +32,10 @@ class Wallet extends HiveObject {
   @HiveField(5)
   DateTime createdAt;
 
+  // ⭐ NEW
+  @HiveField(6)
+  bool excludeFromTotal;
+
   Wallet({
     required this.id,
     required this.name,
@@ -39,6 +43,7 @@ class Wallet extends HiveObject {
     this.balance = 0,
     this.icon,
     DateTime? createdAt,
+    this.excludeFromTotal = false, // default NORMAL WALLET
   }) : createdAt = createdAt ?? DateTime.now();
 
   String get typeLabel {

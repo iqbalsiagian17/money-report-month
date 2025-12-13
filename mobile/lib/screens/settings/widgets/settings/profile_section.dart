@@ -15,9 +15,6 @@ class ProfileSection extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, AppRoutes.profileSetup);
-      },
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(

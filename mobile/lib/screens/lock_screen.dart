@@ -8,7 +8,7 @@ class LockScreen extends StatefulWidget {
   @override
   State<LockScreen> createState() => _LockScreenState();
 }
-
+  
 class _LockScreenState extends State<LockScreen> {
   final TextEditingController _pinController = TextEditingController();
   String _pin = '';

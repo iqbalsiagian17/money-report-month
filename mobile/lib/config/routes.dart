@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:money_report_monthly/screens/profile/profile_setup_screen.dart';
 import 'package:money_report_monthly/screens/settings/limit_settings_screen.dart';
 import 'package:money_report_monthly/screens/settings/notification_settings_screen.dart';
 
@@ -18,7 +17,6 @@ import '../screens/settings/settings_screen.dart';
 class AppRoutes {
   static const String home = '/home';
   static const String lock = '/lock';
-  static const String profileSetup = '/profile-setup';
   static const String notificationSettings = '/notification-settings';
   static const String limitSettings = '/limit-settings';
   static const String wallets = '/wallets';
@@ -35,7 +33,6 @@ class AppRoutes {
 
   static Map<String, WidgetBuilder> routes = {
     home: (context) => const HomeScreen(),
-    profileSetup: (context) => const ProfileSetupScreen(),
     notificationSettings: (context) => const NotificationSettingsScreen(),
     limitSettings: (context) => const LimitSettingsScreen(),
     lock: (context) => const LockScreen(),

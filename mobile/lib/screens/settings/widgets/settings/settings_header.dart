@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../providers/user_provider.dart';
 import 'settings_options.dart';
+import 'dart:io';
 
 class SettingsHeader extends StatelessWidget {
   final UserProvider userProvider;
@@ -53,15 +54,9 @@ class SettingsHeader extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Center(
-                    child: Text(
-                      _getInitials(userProvider.profile?.name),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: _buildAvatar(userProvider),
                   ),
                 ),
               ),
@@ -90,10 +85,9 @@ class SettingsHeader extends StatelessWidget {
                       color: Theme.of(context).primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(
-                      Icons.person_rounded,
-                      color: Theme.of(context).primaryColor,
-                      size: 26,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: _buildProfilePreview(userProvider),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -130,6 +124,49 @@ class SettingsHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAvatar(UserProvider userProvider) {
+    final photoPath = userProvider.profile?.photoPath;
+
+    if (photoPath != null && photoPath.isNotEmpty) {
+      return Image.file(
+        File(photoPath),
+        width: 44,
+        height: 44,
+        fit: BoxFit.cover,
+      );
+    }
+
+    return Center(
+      child: Text(
+        _getInitials(userProvider.profile?.name),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfilePreview(UserProvider userProvider) {
+    final photoPath = userProvider.profile?.photoPath;
+
+    if (photoPath != null && photoPath.isNotEmpty) {
+      return Image.file(
+        File(photoPath),
+        width: 52,
+        height: 52,
+        fit: BoxFit.cover,
+      );
+    }
+
+    return Icon(
+      Icons.person_rounded,
+      color: Colors.blue,
+      size: 26,
     );
   }
 
