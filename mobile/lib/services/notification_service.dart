@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import '../models/custom_notification.dart';
+import '../models/todo.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -49,6 +50,86 @@ class NotificationService {
     }
   }
 
+  // ============ TODO REMINDER NOTIFICATIONS ============
+
+  /// Schedule a reminder for a specific Todo
+  Future<int> scheduleTodoReminder({
+    required Todo todo,
+    required DateTime reminderTime,
+  }) async {
+    // Generate unique notification ID
+    final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    const androidDetails = AndroidNotificationDetails(
+      'todo_reminder_channel',
+      'Todo Reminders',
+      channelDescription: 'Pengingat untuk tugas To-Do',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      color: Color(0xFFE91E63),
+      enableVibration: true,
+      playSound: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    try {
+      await _notifications.zonedSchedule(
+        notificationId,
+        '📋 Pengingat Tugas',
+        'Hai $_userName!  Jangan lupa:  ${todo.title}',
+        tz.TZDateTime.from(reminderTime, tz.local),
+        details,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+
+      debugPrint(
+          'Todo reminder scheduled:  ID=$notificationId, Time=$reminderTime');
+      return notificationId;
+    } catch (e) {
+      debugPrint('Error scheduling todo reminder:  $e');
+      return -1;
+    }
+  }
+
+  /// Cancel a specific todo reminder
+  Future<void> cancelTodoReminder(int notificationId) async {
+    try {
+      await _notifications.cancel(notificationId);
+      debugPrint('Todo reminder cancelled:  ID=$notificationId');
+    } catch (e) {
+      debugPrint('Error cancelling todo reminder: $e');
+    }
+  }
+
+  /// Show instant notification for todo due today
+  Future<void> showTodoDueNotification(Todo todo) async {
+    await showInstantNotification(
+      title: '⏰ Tugas Jatuh Tempo Hari Ini',
+      body: 'Hai $_userName!  Tugas "${todo.title}" jatuh tempo hari ini.',
+    );
+  }
+
+  /// Show instant notification for overdue todo
+  Future<void> showTodoOverdueNotification(Todo todo) async {
+    await showInstantNotification(
+      title: '🚨 Tugas Terlambat! ',
+      body: 'Hai $_userName! Tugas "${todo.title}" sudah melewati batas waktu.',
+    );
+  }
+
   // ============ SCHEDULE DAILY REMINDERS (DEFAULT) ============
   Future<void> scheduleDailyReminders() async {
     // Cancel existing first
@@ -62,7 +143,7 @@ class NotificationService {
         'minute': 0,
         'title': 'Pengingat Pagi',
         'body':
-            'Selamat pagi $_userName!  Jangan lupa catat pengeluaran sarapan 🍳'
+            'Selamat pagi $_userName! Jangan lupa catat pengeluaran sarapan 🍳'
       },
       {
         'id': 2,
@@ -76,14 +157,14 @@ class NotificationService {
         'hour': 17,
         'minute': 0,
         'title': 'Pengingat Sore',
-        'body': 'Sore $_userName! Ada pengeluaran yang belum dicatat?  📝'
+        'body': 'Sore $_userName! Ada pengeluaran yang belum dicatat? 📝'
       },
       {
         'id': 4,
         'hour': 20,
         'minute': 0,
         'title': 'Pengingat Malam',
-        'body': 'Malam $_userName! Yuk review keuangan hari ini 💰'
+        'body': 'Malam $_userName!  Yuk review keuangan hari ini 💰'
       },
     ];
 
@@ -105,8 +186,8 @@ class NotificationService {
   }) async {
     const androidDetails = AndroidNotificationDetails(
       'money_report_channel',
-      'Money Report Notifications',
-      channelDescription: 'Notifikasi untuk Money Report',
+      'Dompetku Notifications',
+      channelDescription: 'Notifikasi untuk Dompetku',
       importance: Importance.high,
       priority: Priority.high,
     );
@@ -214,7 +295,7 @@ class NotificationService {
   // ============ BUDGET WARNING ============
   Future<void> showBudgetWarning(String categoryName, int percentage) async {
     await showInstantNotification(
-      title: 'Peringatan Budget! ⚠️',
+      title: 'Peringatan Budget!  ⚠️',
       body: 'Hai $_userName, budget $categoryName sudah terpakai $percentage%',
     );
   }

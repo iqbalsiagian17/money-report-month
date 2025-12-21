@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../../models/wallet.dart';
 
@@ -25,114 +26,152 @@ class InsufficientBalanceDialog extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final shortage = amount - wallet.balance;
 
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icon
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: Colors.red,
+                size: 36,
+              ),
             ),
-            child: const Icon(Icons.block, color: Colors.red, size: 24),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              'Saldo Tidak Cukup! ',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              'Saldo Tidak Cukup',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              ),
             ),
-          ),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[850] : Colors.grey[100],
-              borderRadius: BorderRadius.circular(16),
+
+            const SizedBox(height: 8),
+
+            // Subtitle
+            Text(
+              'Saldo ${wallet.name} tidak mencukupi untuk transaksi ini',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
             ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Text(wallet.icon ?? '💰',
-                        style: const TextStyle(fontSize: 24)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(wallet.name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600)),
-                          Text(
-                            'Saldo: ${_formatCurrency(wallet.balance)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: wallet.balance > 0
-                                  ? Colors.green
-                                  : Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 24),
-                _DialogRow(
-                    label: 'Pengeluaran', value: _formatCurrency(amount)),
-                const SizedBox(height: 8),
-                _DialogRow(
-                    label: 'Saldo Dompet',
-                    value: _formatCurrency(wallet.balance)),
-                const SizedBox(height: 8),
-                _DialogRow(
+
+            const SizedBox(height: 24),
+
+            // Info Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[850] : Colors.grey[100],
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  _InfoRow(
+                    icon: Icons.shopping_bag_rounded,
+                    label: 'Pengeluaran',
+                    value: _formatCurrency(amount),
+                    valueColor: Colors.red,
+                  ),
+                  const SizedBox(height: 12),
+                  _InfoRow(
+                    icon: Icons.account_balance_wallet_rounded,
+                    label: 'Saldo Tersedia',
+                    value: _formatCurrency(wallet.balance),
+                    valueColor: Colors.green,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(color: Colors.grey[300], height: 1),
+                  ),
+                  _InfoRow(
+                    icon: Icons.remove_circle_outline,
                     label: 'Kekurangan',
                     value: _formatCurrency(shortage),
-                    isHighlight: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.red.withOpacity(0.3)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.red, size: 20),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Saldo tidak boleh minus.  Tambahkan saldo terlebih dahulu atau kurangi jumlah pengeluaran.',
-                    style: TextStyle(fontSize: 12, color: Colors.red),
+                    valueColor: Colors.red,
+                    isBold: true,
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Button
+            SizedBox(
+              width: double.infinity,
+              child: _ActionButton(
+                label: 'Mengerti',
+                color: Colors.red,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color valueColor;
+  final bool isBold;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.valueColor,
+    this.isBold = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey[500]),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[600],
             ),
           ),
-        ],
-      ),
-      actions: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Mengerti'),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+            color: valueColor,
           ),
         ),
       ],
@@ -140,39 +179,53 @@ class InsufficientBalanceDialog extends StatelessWidget {
   }
 }
 
-class _DialogRow extends StatelessWidget {
+class _ActionButton extends StatefulWidget {
   final String label;
-  final String value;
-  final bool isHighlight;
+  final Color color;
+  final VoidCallback onTap;
 
-  const _DialogRow({
+  const _ActionButton({
     required this.label,
-    required this.value,
-    this.isHighlight = false,
+    required this.color,
+    required this.onTap,
   });
 
   @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: isHighlight ? Colors.red : Colors.grey[600],
-            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.normal,
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transform: Matrix4.identity()..scale(_isPressed ? 0.97 : 1.0),
+        transformAlignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: widget.color,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Center(
+          child: Text(
+            widget.label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: isHighlight ? Colors.red : null,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

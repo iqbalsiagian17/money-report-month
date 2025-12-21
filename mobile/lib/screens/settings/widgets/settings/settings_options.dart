@@ -509,9 +509,9 @@ class SettingsOptions {
   static void showAbout(BuildContext context) {
     AppBottomSheet.showInfo(
       context: context,
-      title: 'Money Report',
+      title: 'Dompetku',
       message:
-          'Aplikasi pencatatan keuangan pribadi yang simpel dan mudah digunakan.\n\nVersi 1.0.0\n\nDibuat dengan ❤️ menggunakan Flutter',
+          'Aplikasi pencatatan keuangan pribadi yang simpel dan mudah digunakan.\n\nVersi BETA \n\nDibuat dengan ❤️ \n\n APLIKASI INI MASIH BETA DAN MASIH TAHAP TESTING.  BEBERAPA FITUR MUNGKIN BELUM BERFUNGSI DENGAN SEMESTINYA.  TERIMA KASIH ATAS PENGERTIAN DAN DUKUNGANNYA!',
       type: InfoType.info,
       icon: Icons.info_rounded,
     );

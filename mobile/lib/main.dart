@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:money_report_monthly/models/todo.dart';
+import 'package:money_report_monthly/providers/todo_provider.dart'; // <-- Tambahkan import
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -28,7 +30,7 @@ void main() async {
   await initializeDateFormatting('id_ID', null);
   await Hive.initFlutter();
 
-  // Register Adapters
+  Hive.registerAdapter(UserProfileAdapter());
   Hive.registerAdapter(WalletTypeAdapter());
   Hive.registerAdapter(WalletAdapter());
   Hive.registerAdapter(TransactionTypeAdapter());
@@ -37,18 +39,20 @@ void main() async {
   Hive.registerAdapter(SavingGoalAdapter());
   Hive.registerAdapter(RecurringTypeAdapter());
   Hive.registerAdapter(RecurringTransactionAdapter());
-  Hive.registerAdapter(UserProfileAdapter());
   Hive.registerAdapter(CustomNotificationAdapter());
+  Hive.registerAdapter(TodoAdapter());
 
-  // Open Boxes
+  // Open boxes (SATU KALI)
+  await Hive.openBox<UserProfile>('user_profile');
+  await Hive.openBox('app_state');
   await Hive.openBox<Wallet>('wallets');
   await Hive.openBox<TransactionModel>('transactions');
   await Hive.openBox<CategoryModel>('categories');
   await Hive.openBox<SavingGoal>('savings');
   await Hive.openBox<RecurringTransaction>('recurring');
-  await Hive.openBox<UserProfile>('user_profile');
   await Hive.openBox<CustomNotification>('custom_notifications');
   await Hive.openBox('settings');
+  await Hive.openBox<Todo>('todos');
 
   // Initialize Notifications
   try {
@@ -70,6 +74,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => SavingProvider()),
+        ChangeNotifierProvider(
+            create: (_) => TodoProvider()), // <-- Tambahkan ini
       ],
       child: const MoneyReportApp(),
     ),

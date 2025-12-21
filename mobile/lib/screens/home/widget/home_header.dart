@@ -1,80 +1,136 @@
+import 'dart:io';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
+import '../../../models/user_profile.dart';
+import '../../../providers/user_provider.dart';
+import '../../settings/widgets/settings/settings_options.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final userProvider = context.read<UserProvider>();
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Row(
-        children: [
-          // App Icon
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor.withOpacity(0.7),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    return ValueListenableBuilder<Box<UserProfile>>(
+      valueListenable: Hive.box<UserProfile>('user_profile').listenable(),
+      builder: (context, box, _) {
+        final profile = box.isNotEmpty ? box.getAt(0) : null;
+        final name = profile?.name ?? 'User';
+
+        // ⬇️ greeting random (tapi konsisten per rebuild)
+        final greeting = _randomGreeting();
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+          child: Row(
+            children: [
+              // AVATAR (CLICKABLE)
+              GestureDetector(
+                onTap: () {
+                  SettingsOptions.showProfile(context, userProvider);
+                },
+                child: _UserAvatar(photoPath: profile?.photoPath),
               ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).primaryColor.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Text('💰', style: TextStyle(fontSize: 22)),
-            ),
-          ),
-          const SizedBox(width: 14),
 
-          // Greeting & Date
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getGreeting(),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                  ),
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      greeting,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  DateFormat('EEEE, d MMMM', 'id_ID').format(DateTime.now()),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Selamat Pagi 👋';
-    if (hour < 15) return 'Selamat Siang 🌤️';
-    if (hour < 18) return 'Selamat Sore 🌅';
-    return 'Selamat Malam 🌙';
+// ================= GREETING RANDOM =================
+  String _randomGreeting() {
+    final greetings = [
+      'Halo 👋',
+      'Hai 😊',
+      'Selamat datang ✨',
+      'Apa kabar hari ini?',
+      'Semoga harimu menyenangkan 🌤️',
+      'Yuk catat keuangan hari ini 💰',
+      'Siap mengatur keuangan? 📊',
+      'Tetap hemat ya 😉',
+      'Semangat terus 🔥',
+      'Selamat beraktivitas 🚀',
+      'Jangan lupa catat transaksi 🧾',
+      'Keuangan rapi, hidup tenang 😌',
+      'Hari baru, catatan baru 📒',
+      'Ayo mulai hari produktifmu 💪',
+      'Uang terkontrol, hati pun tenang 🧠',
+      'Sedikit demi sedikit jadi bukit ⛰️',
+      'Catat sekarang, tenang kemudian 🧘',
+      'Mulai hari dengan perencanaan 💡',
+    ];
+
+    final random = Random();
+    return greetings[random.nextInt(greetings.length)];
+  }
+}
+
+class _UserAvatar extends StatelessWidget {
+  final String? photoPath;
+
+  const _UserAvatar({this.photoPath});
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 22,
+      backgroundColor: Colors.grey.shade200,
+      backgroundImage: _imageProvider(),
+      child: _imageProvider() == null
+          ? const Icon(Icons.person, color: Colors.grey)
+          : null,
+    );
+  }
+
+  ImageProvider? _imageProvider() {
+    if (photoPath == null || photoPath!.isEmpty) return null;
+
+    if (photoPath!.startsWith('http')) {
+      return NetworkImage(photoPath!);
+    }
+
+    if (photoPath!.startsWith('assets/')) {
+      return AssetImage(photoPath!);
+    }
+
+    final file = File(photoPath!);
+    if (file.existsSync()) {
+      return FileImage(file);
+    }
+
+    return null;
   }
 }

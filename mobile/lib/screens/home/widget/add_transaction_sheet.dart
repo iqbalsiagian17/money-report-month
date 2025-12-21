@@ -72,6 +72,20 @@ class AddTransactionSheet extends StatelessWidget {
                     },
                   ),
                 ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _TransactionTypeCard(
+                    icon: Icons.sync_alt_rounded,
+                    label: 'Pemindahan Dana',
+                    subtitle: 'Pindah saldo antar dompet',
+                    color: const Color(0xFF1E88E5),
+                    isDark: isDark,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.transfer);
+                    },
+                  ),
+                ),
               ],
             ),
           ),

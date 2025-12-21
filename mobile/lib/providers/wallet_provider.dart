@@ -54,6 +54,27 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> transferById({
+    required String fromWalletId,
+    required String toWalletId,
+    required double amount,
+  }) async {
+    final fromWallet = wallets.firstWhere((w) => w.id == fromWalletId);
+    final toWallet = wallets.firstWhere((w) => w.id == toWalletId);
+
+    if (fromWallet.balance < amount) {
+      throw Exception('Saldo tidak cukup');
+    }
+
+    fromWallet.balance -= amount;
+    toWallet.balance += amount;
+
+    await fromWallet.save();
+    await toWallet.save();
+
+    notifyListeners();
+  }
+
   Future<void> initDefaultWallets() async {
     if (wallets.isEmpty) {
       await addWallet(Wallet(

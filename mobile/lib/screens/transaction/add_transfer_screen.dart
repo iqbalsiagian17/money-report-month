@@ -1,33 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/transaction.dart';
+import '../../models/wallet.dart';
 import '../../providers/wallet_provider.dart';
 import '../../providers/transaction_provider.dart';
-import '../../providers/category_provider.dart';
-import '../../providers/user_provider.dart';
 
-// Import widgets
+// shared widgets
 import 'widgets/shared/currency_input_formatter.dart';
-import 'widgets/expense/dialogs/insufficient_balance_dialog.dart';
-import 'widgets/expense/dialogs/limit_exceeded_dialog.dart';
 
-class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key});
+class AddTransferScreen extends StatefulWidget {
+  const AddTransferScreen({super.key});
 
   @override
-  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
+  State<AddTransferScreen> createState() => _AddTransferScreenState();
 }
 
-class _AddExpenseScreenState extends State<AddExpenseScreen>
+class _AddTransferScreenState extends State<AddTransferScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
 
-  String? _selectedWalletId;
-  String? _selectedCategoryId;
+  String? _fromWalletId;
+  String? _toWalletId;
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _isLoading = false;
@@ -97,10 +95,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
       opacity: _fadeAnimation,
       child: CustomScrollView(
         slivers: [
-          // Custom App Bar
           _buildAppBar(context, isDark),
-
-          // Content
           SliverToBoxAdapter(
             child: _buildForm(context, isDark),
           ),
@@ -114,13 +109,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
       expandedHeight: 120,
       floating: false,
       pinned: true,
-      backgroundColor: Colors.red,
-      leading: _BackButton(
-        onTap: () => Navigator.pop(context),
-      ),
+      backgroundColor: Colors.blue,
+      leading: _BackButton(onTap: () => Navigator.pop(context)),
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
-          'Pengeluaran',
+          'Transfer',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -132,8 +125,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFFE53935),
-                Color(0xFFC62828),
+                Color(0xFF1976D2),
+                Color(0xFF1565C0),
               ],
             ),
           ),
@@ -155,7 +148,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
                 right: 30,
                 bottom: 50,
                 child: Icon(
-                  Icons.arrow_upward_rounded,
+                  Icons.swap_horiz_rounded,
                   size: 40,
                   color: Colors.white.withOpacity(0.2),
                 ),
@@ -169,9 +162,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
 
   Widget _buildForm(BuildContext context, bool isDark) {
     final walletProvider = context.watch<WalletProvider>();
-    final categoryProvider = context.watch<CategoryProvider>();
-    final txProvider = context.watch<TransactionProvider>();
-    final userProvider = context.watch<UserProvider>();
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -180,67 +170,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Limit Info
-            _buildLimitInfo(userProvider, txProvider, isDark),
-
-            const SizedBox(height: 20),
-
             // Amount Card
             _AmountCard(
               controller: _amountController,
-              color: Colors.red,
+              color: Colors.blue,
               isDark: isDark,
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // Category Selector
-            _SelectorCard(
-              label: 'Kategori',
-              icon: Icons.category_rounded,
-              value: _selectedCategoryId != null
-                  ? categoryProvider.getById(_selectedCategoryId!)?.name
-                  : null,
-              valueIcon: _selectedCategoryId != null
-                  ? categoryProvider.getById(_selectedCategoryId!)?.icon
-                  : null,
-              placeholder: 'Pilih kategori',
-              isDark: isDark,
-              onTap: () => _showCategoryPicker(
-                  context, categoryProvider, userProvider, isDark),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Wallet Selector
-            _SelectorCard(
-              label: 'Dompet',
-              icon: Icons.account_balance_wallet_rounded,
-              value: _selectedWalletId != null
-                  ? walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .name
-                  : null,
-              valueIcon: _selectedWalletId != null
-                  ? walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .icon
-                  : null,
-              subtitle: _selectedWalletId != null
-                  ? _formatCurrency(walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .balance)
-                  : null,
-              placeholder: 'Pilih dompet',
-              isDark: isDark,
-              onTap: () => _showWalletPicker(context, walletProvider, isDark),
-            ),
+            // Transfer Visual Card
+            _buildTransferCard(walletProvider, isDark),
 
             // Balance Warning
-            if (_selectedWalletId != null)
+            if (_fromWalletId != null)
               _buildBalanceWarning(walletProvider, isDark),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // Date Time Row
             Row(
@@ -283,12 +229,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
 
             // Save Button
             _SaveButton(
-              label: 'Simpan Pengeluaran',
-              color: Colors.red,
-              icon: Icons.arrow_upward_rounded,
+              label: 'Transfer Dana',
+              color: Colors.blue,
+              icon: Icons.swap_horiz_rounded,
               isEnabled: _checkCanSave(walletProvider),
               isLoading: _isLoading,
-              onTap: _saveExpense,
+              onTap: _saveTransfer,
             ),
 
             const SizedBox(height: 40),
@@ -298,22 +244,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
     );
   }
 
-  Widget _buildLimitInfo(
-    UserProvider userProvider,
-    TransactionProvider txProvider,
-    bool isDark,
-  ) {
-    final isWeekend = userProvider.isWeekend();
-    final hasAnyLimit =
-        userProvider.isDailyLimitEnabled || userProvider.isWeekendLimitEnabled;
-
-    if (!hasAnyLimit) return const SizedBox.shrink();
+  Widget _buildTransferCard(WalletProvider walletProvider, bool isDark) {
+    final fromWallet = _fromWalletId != null
+        ? walletProvider.wallets.firstWhere((w) => w.id == _fromWalletId)
+        : null;
+    final toWallet = _toWalletId != null
+        ? walletProvider.wallets.firstWhere((w) => w.id == _toWalletId)
+        : null;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: isDark
             ? null
             : [
@@ -325,62 +268,93 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
               ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
+          // From Wallet
+          _WalletSelector(
+            label: 'Dari',
+            wallet: fromWallet,
+            placeholder: 'Pilih dompet asal',
+            isDark: isDark,
+            color: Colors.red,
+            icon: Icons.arrow_upward_rounded,
+            formatCurrency: _formatCurrency,
+            onTap: () => _showWalletPicker(
+              context,
+              walletProvider,
+              isDark,
+              isFrom: true,
+              excludeId: _toWalletId,
+            ),
+          ),
+
+          // Transfer Arrow
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                Expanded(child: Divider(color: Colors.grey[300])),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_downward_rounded,
+                    color: Colors.blue,
+                    size: 24,
+                  ),
+                ),
+                Expanded(child: Divider(color: Colors.grey[300])),
+              ],
+            ),
+          ),
+
+          // To Wallet
+          _WalletSelector(
+            label: 'Ke',
+            wallet: toWallet,
+            placeholder: 'Pilih dompet tujuan',
+            isDark: isDark,
+            color: Colors.green,
+            icon: Icons.arrow_downward_rounded,
+            formatCurrency: _formatCurrency,
+            onTap: () => _showWalletPicker(
+              context,
+              walletProvider,
+              isDark,
+              isFrom: false,
+              excludeId: _fromWalletId,
+            ),
+          ),
+
+          // Same Wallet Warning
+          if (_fromWalletId != null &&
+              _toWalletId != null &&
+              _fromWalletId == _toWalletId)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Container(
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.speed_rounded,
-                    color: Colors.blue, size: 18),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Status Limit',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-              if (isWeekend) ...[
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    '🎉 Weekend',
-                    style: TextStyle(fontSize: 11, color: Colors.purple),
-                  ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.orange, size: 18),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Dompet asal dan tujuan tidak boleh sama',
+                        style: TextStyle(fontSize: 12, color: Colors.orange),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 14),
-          if (userProvider.isDailyLimitEnabled)
-            _LimitProgressBar(
-              label: 'Harian',
-              spent: txProvider.getTodayExpenseByCategories(
-                  userProvider.dailyLimitCategories),
-              limit: userProvider.dailyLimit,
-              color: Colors.blue,
-              formatCurrency: _formatCurrency,
+              ),
             ),
-          if (userProvider.isWeekendLimitEnabled && isWeekend) ...[
-            if (userProvider.isDailyLimitEnabled) const SizedBox(height: 12),
-            _LimitProgressBar(
-              label: 'Weekend',
-              spent: txProvider.getCurrentWeekendExpenseByCategories(
-                  userProvider.weekendLimitCategories),
-              limit: userProvider.weekendLimit,
-              color: Colors.purple,
-              formatCurrency: _formatCurrency,
-            ),
-          ],
         ],
       ),
     );
@@ -388,12 +362,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
 
   Widget _buildBalanceWarning(WalletProvider walletProvider, bool isDark) {
     final wallet = walletProvider.wallets.firstWhere(
-      (w) => w.id == _selectedWalletId,
+      (w) => w.id == _fromWalletId,
     );
 
     if (wallet.balance <= 0) {
       return Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: 12),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -407,7 +381,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
-                  'Saldo dompet kosong! ',
+                  'Saldo dompet asal kosong! ',
                   style: TextStyle(fontSize: 12, color: Colors.red),
                 ),
               ),
@@ -419,7 +393,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
 
     if (_currentAmount > 0 && _currentAmount > wallet.balance) {
       return Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: 12),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -444,102 +418,42 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
       );
     }
 
-    if (_currentAmount > 0) {
-      final remaining = wallet.balance - _currentAmount;
-      return Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.check_circle_outline,
-                  color: Colors.green, size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Sisa:  ${_formatCurrency(remaining)}',
-                  style: const TextStyle(fontSize: 12, color: Colors.green),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return const SizedBox.shrink();
-  }
-
-  void _showCategoryPicker(
-    BuildContext context,
-    CategoryProvider categoryProvider,
-    UserProvider userProvider,
-    bool isDark,
-  ) {
-    final categories = categoryProvider.expenseCategories;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => _PickerSheet(
-        title: 'Pilih Kategori',
-        isDark: isDark,
-        children: categories.map((cat) {
-          final limitType = userProvider.getLimitTypeForCategory(cat.id);
-          return _PickerItem(
-            icon: cat.icon,
-            label: cat.name,
-            badge: limitType != 'none' ? _getLimitBadge(limitType) : null,
-            isSelected: _selectedCategoryId == cat.id,
-            onTap: () {
-              setState(() => _selectedCategoryId = cat.id);
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  String? _getLimitBadge(String limitType) {
-    switch (limitType) {
-      case 'daily':
-        return 'Harian';
-      case 'weekend':
-        return 'Weekend';
-      case 'unlimited':
-        return 'Bebas';
-      default:
-        return null;
-    }
   }
 
   void _showWalletPicker(
     BuildContext context,
     WalletProvider walletProvider,
-    bool isDark,
-  ) {
+    bool isDark, {
+    required bool isFrom,
+    String? excludeId,
+  }) {
+    final wallets =
+        walletProvider.wallets.where((w) => w.id != excludeId).toList();
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => _PickerSheet(
-        title: 'Pilih Dompet',
+        title: isFrom ? 'Pilih Dompet Asal' : 'Pilih Dompet Tujuan',
         isDark: isDark,
-        children: walletProvider.wallets.map((wallet) {
+        children: wallets.map((wallet) {
+          final selectedId = isFrom ? _fromWalletId : _toWalletId;
           return _PickerItem(
             icon: wallet.icon ?? '💰',
             label: wallet.name,
             subtitle: _formatCurrency(wallet.balance),
             subtitleColor: wallet.balance > 0 ? Colors.green : Colors.red,
-            isSelected: _selectedWalletId == wallet.id,
+            isSelected: selectedId == wallet.id,
             onTap: () {
-              setState(() => _selectedWalletId = wallet.id);
+              setState(() {
+                if (isFrom) {
+                  _fromWalletId = wallet.id;
+                } else {
+                  _toWalletId = wallet.id;
+                }
+              });
               Navigator.pop(context);
             },
           );
@@ -571,10 +485,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
   }
 
   bool _checkCanSave(WalletProvider walletProvider) {
-    if (_selectedWalletId == null) return true;
+    if (_fromWalletId == null || _toWalletId == null) return false;
+    if (_fromWalletId == _toWalletId) return false;
 
     final wallet = walletProvider.wallets.firstWhere(
-      (w) => w.id == _selectedWalletId,
+      (w) => w.id == _fromWalletId,
     );
 
     if (wallet.balance <= 0) return false;
@@ -583,52 +498,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
     return true;
   }
 
-  Future<void> _saveExpense() async {
+  Future<void> _saveTransfer() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedCategoryId == null || _selectedWalletId == null) {
-      _showError('Lengkapi kategori dan dompet');
+
+    if (_fromWalletId == null || _toWalletId == null) {
+      _showError('Pilih dompet asal dan tujuan');
       return;
     }
 
-    if (_currentAmount <= 0) {
-      _showError('Masukkan jumlah pengeluaran');
+    if (_fromWalletId == _toWalletId) {
+      _showError('Dompet asal dan tujuan tidak boleh sama');
       return;
     }
 
-    final walletProvider = context.read<WalletProvider>();
     final amount = _currentAmount;
-    final walletId = _selectedWalletId!;
-    final wallet = walletProvider.wallets.firstWhere((w) => w.id == walletId);
 
-    if (wallet.balance < amount) {
-      showDialog(
-        context: context,
-        builder: (ctx) =>
-            InsufficientBalanceDialog(wallet: wallet, amount: amount),
-      );
+    if (amount <= 0) {
+      _showError('Masukkan jumlah transfer');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final userProvider = context.read<UserProvider>();
-      final txProvider = context.read<TransactionProvider>();
-      final categoryId = _selectedCategoryId!;
-
-      final limitCheck =
-          _checkLimit(userProvider, txProvider, categoryId, amount);
-      if (limitCheck != null) {
-        setState(() => _isLoading = false);
-        final proceed = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => LimitExceededDialog(result: limitCheck),
-        );
-        if (proceed != true) return;
-        setState(() => _isLoading = true);
-      }
-
       final dateTime = DateTime(
         _selectedDate.year,
         _selectedDate.month,
@@ -637,25 +529,47 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
         _selectedTime.minute,
       );
 
-      final transaction = TransactionModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        type: TransactionType.expense,
+      final note = _noteController.text.isNotEmpty
+          ? _noteController.text
+          : 'Transfer dana';
+
+      // Transaksi keluar
+      final outTransaction = TransactionModel(
+        id: '${DateTime.now().millisecondsSinceEpoch}_out',
+        type: TransactionType.transfer,
         amount: amount,
-        walletId: walletId,
-        categoryId: categoryId,
+        walletId: _fromWalletId!,
+        categoryId: null,
         dateTime: dateTime,
-        note: _noteController.text.trim(),
+        note: 'Transfer keluar:  $note',
       );
 
-      await txProvider.addTransaction(transaction);
-      await walletProvider.updateBalance(walletId, -amount);
+      // Transaksi masuk
+      final inTransaction = TransactionModel(
+        id: '${DateTime.now().millisecondsSinceEpoch}_in',
+        type: TransactionType.transfer,
+        amount: amount,
+        walletId: _toWalletId!,
+        categoryId: null,
+        dateTime: dateTime,
+        note: 'Transfer masuk: $note',
+      );
+
+      await context.read<TransactionProvider>().addTransaction(outTransaction);
+      await context.read<TransactionProvider>().addTransaction(inTransaction);
+
+      await context.read<WalletProvider>().transferById(
+            fromWalletId: _fromWalletId!,
+            toWalletId: _toWalletId!,
+            amount: amount,
+          );
 
       if (mounted) {
         HapticFeedback.lightImpact();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Pengeluaran berhasil disimpan!  📝'),
+            content: const Text('Transfer berhasil!  🔄'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
             shape:
@@ -664,60 +578,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
         );
       }
     } catch (e) {
-      _showError('Gagal menyimpan:  $e');
+      _showError('Gagal transfer: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  LimitCheckResult? _checkLimit(
-    UserProvider userProvider,
-    TransactionProvider txProvider,
-    String categoryId,
-    double amount,
-  ) {
-    final limitType = userProvider.getLimitTypeForCategory(categoryId);
-    final isWeekend = userProvider.isWeekend();
-
-    if (limitType == 'unlimited' || limitType == 'none') return null;
-
-    if (limitType == 'daily' && userProvider.isDailyLimitEnabled) {
-      final todaySpent = txProvider
-          .getTodayExpenseByCategories(userProvider.dailyLimitCategories);
-      final newTotal = todaySpent + amount;
-
-      if (newTotal > userProvider.dailyLimit) {
-        return LimitCheckResult(
-          type: 'daily',
-          limitName: 'Limit Harian',
-          currentSpent: todaySpent,
-          newAmount: amount,
-          limit: userProvider.dailyLimit,
-          exceeded: newTotal - userProvider.dailyLimit,
-        );
-      }
-    }
-
-    if (limitType == 'weekend' &&
-        userProvider.isWeekendLimitEnabled &&
-        isWeekend) {
-      final weekendSpent = txProvider.getCurrentWeekendExpenseByCategories(
-          userProvider.weekendLimitCategories);
-      final newTotal = weekendSpent + amount;
-
-      if (newTotal > userProvider.weekendLimit) {
-        return LimitCheckResult(
-          type: 'weekend',
-          limitName: 'Limit Weekend',
-          currentSpent: weekendSpent,
-          newAmount: amount,
-          limit: userProvider.weekendLimit,
-          exceeded: newTotal - userProvider.weekendLimit,
-        );
-      }
-    }
-
-    return null;
   }
 
   void _showError(String message) {
@@ -732,7 +596,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
   }
 }
 
-// ==================== SHARED WIDGETS ====================
+// ==================== WIDGETS ====================
 
 class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -788,7 +652,7 @@ class _AmountCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Jumlah',
+            'Jumlah Transfer',
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey[500],
@@ -838,13 +702,137 @@ class _AmountCard extends StatelessWidget {
   }
 }
 
+class _WalletSelector extends StatefulWidget {
+  final String label;
+  final Wallet? wallet;
+  final String placeholder;
+  final bool isDark;
+  final Color color;
+  final IconData icon;
+  final String Function(double) formatCurrency;
+  final VoidCallback onTap;
+
+  const _WalletSelector({
+    required this.label,
+    required this.wallet,
+    required this.placeholder,
+    required this.isDark,
+    required this.color,
+    required this.icon,
+    required this.formatCurrency,
+    required this.onTap,
+  });
+
+  @override
+  State<_WalletSelector> createState() => _WalletSelectorState();
+}
+
+class _WalletSelectorState extends State<_WalletSelector> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasWallet = widget.wallet != null;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+        transformAlignment: Alignment.center,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: hasWallet
+              ? widget.color.withOpacity(0.05)
+              : (widget.isDark ? Colors.grey[850] : Colors.grey[100]),
+          borderRadius: BorderRadius.circular(14),
+          border: hasWallet
+              ? Border.all(color: widget.color.withOpacity(0.2))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: widget.color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(widget.icon, color: widget.color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      if (hasWallet) ...[
+                        Text(
+                          widget.wallet!.icon ?? '💰',
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: Text(
+                          hasWallet ? widget.wallet!.name : widget.placeholder,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: hasWallet
+                                ? (widget.isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1A1A2E))
+                                : Colors.grey[400],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (hasWallet) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.formatCurrency(widget.wallet!.balance),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: widget.wallet!.balance > 0
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded,
+                color: Colors.grey[400], size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SelectorCard extends StatefulWidget {
   final String label;
   final IconData icon;
   final String? value;
-  final String? valueIcon;
-  final String? subtitle;
-  final String placeholder;
   final bool isDark;
   final bool compact;
   final VoidCallback onTap;
@@ -853,9 +841,6 @@ class _SelectorCard extends StatefulWidget {
     required this.label,
     required this.icon,
     this.value,
-    this.valueIcon,
-    this.subtitle,
-    this.placeholder = 'Pilih',
     required this.isDark,
     this.compact = false,
     required this.onTap,
@@ -891,15 +876,6 @@ class _SelectorCardState extends State<_SelectorCard> {
                 ? Colors.grey[800]!
                 : const Color(0xFF1A1A2E).withOpacity(0.08),
           ),
-          boxShadow: widget.isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
         ),
         child: Row(
           children: [
@@ -909,11 +885,8 @@ class _SelectorCardState extends State<_SelectorCard> {
                 color: Theme.of(context).primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                widget.icon,
-                color: Theme.of(context).primaryColor,
-                size: 20,
-              ),
+              child: Icon(widget.icon,
+                  color: Theme.of(context).primaryColor, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -922,54 +895,26 @@ class _SelectorCardState extends State<_SelectorCard> {
                 children: [
                   Text(
                     widget.label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      if (widget.valueIcon != null) ...[
-                        Text(widget.valueIcon!,
-                            style: const TextStyle(fontSize: 16)),
-                        const SizedBox(width: 6),
-                      ],
-                      Expanded(
-                        child: Text(
-                          widget.value ?? widget.placeholder,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: widget.value != null
-                                ? (widget.isDark
-                                    ? Colors.white
-                                    : const Color(0xFF1A1A2E))
-                                : Colors.grey[400],
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (widget.subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.subtitle!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.green,
-                      ),
+                  Text(
+                    widget.value ?? 'Pilih',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: widget.value != null
+                          ? (widget.isDark
+                              ? Colors.white
+                              : const Color(0xFF1A1A2E))
+                          : Colors.grey[400],
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.grey[400],
-              size: 20,
-            ),
+            Icon(Icons.chevron_right_rounded,
+                color: Colors.grey[400], size: 20),
           ],
         ),
       ),
@@ -1010,11 +955,7 @@ class _NoteCard extends StatelessWidget {
               color: Colors.grey.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.note_rounded,
-              color: Colors.grey[500],
-              size: 20,
-            ),
+            child: Icon(Icons.note_rounded, color: Colors.grey[500], size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1128,102 +1069,6 @@ class _SaveButtonState extends State<_SaveButton> {
   }
 }
 
-class _LimitProgressBar extends StatelessWidget {
-  final String label;
-  final double spent;
-  final double limit;
-  final Color color;
-  final String Function(double) formatCurrency;
-
-  const _LimitProgressBar({
-    required this.label,
-    required this.spent,
-    required this.limit,
-    required this.color,
-    required this.formatCurrency,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final percentage =
-        limit > 0 ? (spent / limit * 100).clamp(0.0, 100.0) : 0.0;
-    final remaining = (limit - spent).clamp(0.0, limit);
-
-    Color progressColor;
-    if (percentage < 50) {
-      progressColor = Colors.green;
-    } else if (percentage < 80) {
-      progressColor = Colors.orange;
-    } else {
-      progressColor = Colors.red;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-            Text(
-              '${percentage.toStringAsFixed(0)}%',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: progressColor,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: percentage / 100,
-            minHeight: 6,
-            backgroundColor: Colors.grey[200],
-            valueColor: AlwaysStoppedAnimation(progressColor),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              formatCurrency(spent),
-              style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-            ),
-            Text(
-              'Sisa: ${formatCurrency(remaining)}',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: remaining > 0 ? Colors.green : Colors.red,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 class _PickerSheet extends StatelessWidget {
   final String title;
   final bool isDark;
@@ -1285,7 +1130,6 @@ class _PickerItem extends StatelessWidget {
   final String label;
   final String? subtitle;
   final Color? subtitleColor;
-  final String? badge;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -1294,7 +1138,6 @@ class _PickerItem extends StatelessWidget {
     required this.label,
     this.subtitle,
     this.subtitleColor,
-    this.badge,
     required this.isSelected,
     required this.onTap,
   });
@@ -1326,37 +1169,13 @@ class _PickerItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color:
-                              isDark ? Colors.white : const Color(0xFF1A1A2E),
-                        ),
-                      ),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            badge!,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                    ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),

@@ -76,8 +76,8 @@ class BackupService {
       final file = XFile(filePath);
       await Share.shareXFiles(
         [file],
-        text: 'Backup Money Report',
-        subject: 'Money Report Backup',
+        text: 'Backup Dompetku',
+        subject: 'Dompetku Backup',
       );
 
       return true;

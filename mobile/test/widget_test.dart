@@ -1,4 +1,4 @@
-// This is a basic Flutter widget test for Money Report Monthly.
+// This is a basic Flutter widget test for Dompetku Monthly.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,14 +13,14 @@ void main() {
       const MaterialApp(
         home: Scaffold(
           body: Center(
-            child: Text('Money Report Monthly'),
+            child: Text('Dompetku'),
           ),
         ),
       ),
     );
 
     // Verify app title exists
-    expect(find.text('Money Report Monthly'), findsOneWidget);
+    expect(find.text('Dompetku'), findsOneWidget);
   });
 
   testWidgets('Basic widget renders correctly', (WidgetTester tester) async {

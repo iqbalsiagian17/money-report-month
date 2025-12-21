@@ -10,14 +10,32 @@ class StatisticsCard extends StatelessWidget {
     required this.txProvider,
   });
 
+  // Format ringkas untuk angka besar
+  String _formatCompact(double amount) {
+    final isNegative = amount < 0;
+    final absAmount = amount.abs();
+    String result;
+
+    if (absAmount >= 1000000000) {
+      result = 'Rp ${(absAmount / 1000000000).toStringAsFixed(1)}M';
+    } else if (absAmount >= 1000000) {
+      result = 'Rp ${(absAmount / 1000000).toStringAsFixed(1)}jt';
+    } else if (absAmount >= 100000) {
+      result = 'Rp ${(absAmount / 1000).toStringAsFixed(0)}rb';
+    } else {
+      result = NumberFormat.currency(
+        locale: 'id_ID',
+        symbol: 'Rp ',
+        decimalDigits: 0,
+      ).format(absAmount);
+    }
+
+    return isNegative ? '-$result' : result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currencyFormat = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -45,12 +63,14 @@ class StatisticsCard extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Statistik Bulan Ini',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: isDark ? Colors.white : Colors.black87,
+              Expanded(
+                child: Text(
+                  'Statistik Bulan Ini',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
               ),
             ],
@@ -72,7 +92,7 @@ class StatisticsCard extends StatelessWidget {
                 child: _StatItem(
                   icon: Icons.calculate_rounded,
                   label: 'Rata-rata/Hari',
-                  value: currencyFormat.format(txProvider.averageDailyExpense),
+                  value: _formatCompact(txProvider.averageDailyExpense),
                   color: Colors.orange,
                   isDark: isDark,
                 ),
@@ -86,8 +106,7 @@ class StatisticsCard extends StatelessWidget {
                 child: _StatItem(
                   icon: Icons.shopping_bag_rounded,
                   label: 'Rata-rata/Transaksi',
-                  value: currencyFormat
-                      .format(txProvider.averageTransactionAmount),
+                  value: _formatCompact(txProvider.averageTransactionAmount),
                   color: Colors.purple,
                   isDark: isDark,
                 ),
@@ -97,7 +116,7 @@ class StatisticsCard extends StatelessWidget {
                 child: _StatItem(
                   icon: Icons.account_balance_wallet_rounded,
                   label: 'Net Balance',
-                  value: currencyFormat.format(
+                  value: _formatCompact(
                       txProvider.thisMonthIncome - txProvider.thisMonthExpense),
                   color: (txProvider.thisMonthIncome -
                               txProvider.thisMonthExpense) >=
@@ -159,15 +178,18 @@ class _StatItem extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+              maxLines: 1,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

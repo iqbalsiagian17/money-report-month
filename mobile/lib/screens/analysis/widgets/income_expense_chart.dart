@@ -1,5 +1,7 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class IncomeExpenseChart extends StatelessWidget {
@@ -12,15 +14,26 @@ class IncomeExpenseChart extends StatelessWidget {
     required this.expense,
   });
 
+  // Format ringkas untuk angka besar
+  String _formatCompact(double amount) {
+    if (amount >= 1000000000) {
+      return 'Rp ${(amount / 1000000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000000) {
+      return 'Rp ${(amount / 1000000).toStringAsFixed(1)}jt';
+    } else if (amount >= 100000) {
+      return 'Rp ${(amount / 1000).toStringAsFixed(0)}rb';
+    }
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(amount);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final total = income + expense;
-    final currencyFormat = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -48,12 +61,14 @@ class IncomeExpenseChart extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Pemasukan vs Pengeluaran',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: isDark ? Colors.white : Colors.black87,
+              Expanded(
+                child: Text(
+                  'Pemasukan vs Pengeluaran',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
               ),
             ],
@@ -74,11 +89,13 @@ class IncomeExpenseChart extends StatelessWidget {
                   barTouchData: BarTouchData(
                     enabled: true,
                     touchTooltipData: BarTouchTooltipData(
+                      fitInsideHorizontally: true,
+                      fitInsideVertically: true,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final label =
                             groupIndex == 0 ? 'Pemasukan' : 'Pengeluaran';
                         return BarTooltipItem(
-                          '$label\n${currencyFormat.format(rod.toY)}',
+                          '$label\n${_formatCompact(rod.toY)}',
                           const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -98,13 +115,13 @@ class IncomeExpenseChart extends StatelessWidget {
                               return const Padding(
                                 padding: EdgeInsets.only(top: 8),
                                 child: Text('Pemasukan',
-                                    style: TextStyle(fontSize: 12)),
+                                    style: TextStyle(fontSize: 11)),
                               );
                             case 1:
                               return const Padding(
                                 padding: EdgeInsets.only(top: 8),
                                 child: Text('Pengeluaran',
-                                    style: TextStyle(fontSize: 12)),
+                                    style: TextStyle(fontSize: 11)),
                               );
                             default:
                               return const Text('');
@@ -162,16 +179,20 @@ class IncomeExpenseChart extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _Legend(
-                color: Colors.green,
-                label: 'Pemasukan',
-                value: currencyFormat.format(income),
+              Flexible(
+                child: _Legend(
+                  color: Colors.green,
+                  label: 'Pemasukan',
+                  value: _formatCompact(income),
+                ),
               ),
-              const SizedBox(width: 24),
-              _Legend(
-                color: Colors.red,
-                label: 'Pengeluaran',
-                value: currencyFormat.format(expense),
+              const SizedBox(width: 16),
+              Flexible(
+                child: _Legend(
+                  color: Colors.red,
+                  label: 'Pengeluaran',
+                  value: _formatCompact(expense),
+                ),
               ),
             ],
           ),
@@ -219,6 +240,7 @@ class _Legend extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: color,
           ),
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

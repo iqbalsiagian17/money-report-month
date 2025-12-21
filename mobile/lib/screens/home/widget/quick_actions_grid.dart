@@ -14,38 +14,48 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.account_balance_wallet_rounded,
         label: 'Dompet',
         route: AppRoutes.wallets,
-        color: const Color(0xFF2196F3),
+        bgColor: const Color(0xFFE3F2FD),
+        iconColor: const Color(0xFF2196F3),
       ),
       _QuickAction(
         icon: Icons.savings_rounded,
         label: 'Tabungan',
         route: AppRoutes.savings,
-        color: const Color(0xFF4CAF50),
+        bgColor: const Color(0xFFE8F5E9),
+        iconColor: const Color(0xFF4CAF50),
       ),
       _QuickAction(
-        icon: Icons.speed_rounded,
-        label: 'Limit',
-        route: AppRoutes.limitSettings,
-        color: const Color(0xFFFF9800),
+        icon: Icons.checklist_rounded,
+        label: 'To-Do',
+        route: AppRoutes.todo,
+        bgColor: const Color(0xFFFCE4EC),
+        iconColor: const Color(0xFFE91E63),
       ),
       _QuickAction(
         icon: Icons.repeat_rounded,
         label: 'Rutin',
         route: AppRoutes.recurring,
-        color: const Color(0xFF9C27B0),
+        bgColor: const Color(0xFFF3E5F5),
+        iconColor: const Color(0xFF9C27B0),
       ),
     ];
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: isDark
+            ? null
+            : Border.all(
+                color: const Color(0xFF1A1A2E).withOpacity(0.06),
+                width: 1,
+              ),
         boxShadow: isDark
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: const Color(0xFF1A1A2E).withOpacity(0.04),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -65,13 +75,15 @@ class _QuickAction {
   final IconData icon;
   final String label;
   final String route;
-  final Color color;
+  final Color bgColor;
+  final Color iconColor;
 
   _QuickAction({
     required this.icon,
     required this.label,
     required this.route,
-    required this.color,
+    required this.bgColor,
+    required this.iconColor,
   });
 }
 
@@ -101,22 +113,24 @@ class _QuickActionItemState extends State<_QuickActionItem> {
         Navigator.pushNamed(context, widget.action.route);
       },
       onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedScale(
-        scale: _isPressed ? 0.92 : 1.0,
-        duration: const Duration(milliseconds: 100),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transform: Matrix4.identity()..scale(_isPressed ? 0.9 : 1.0),
+        transformAlignment: Alignment.center,
         child: Column(
           children: [
             Container(
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color:
-                    widget.action.color.withOpacity(widget.isDark ? 0.15 : 0.1),
+                color: widget.isDark
+                    ? widget.action.iconColor.withOpacity(0.15)
+                    : widget.action.bgColor,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 widget.action.icon,
-                color: widget.action.color,
+                color: widget.action.iconColor,
                 size: 24,
               ),
             ),
@@ -125,8 +139,10 @@ class _QuickActionItemState extends State<_QuickActionItem> {
               widget.action.label,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: widget.isDark ? Colors.grey[300] : Colors.grey[700],
+                fontWeight: FontWeight.w600,
+                color: widget.isDark
+                    ? Colors.grey[300]
+                    : const Color(0xFF1A1A2E).withOpacity(0.7),
               ),
             ),
           ],

@@ -32,7 +32,7 @@ class ProfileSection extends StatelessWidget {
                   Text(
                     userProvider.userName.isNotEmpty
                         ? userProvider.userName
-                        : 'Money Report',
+                        : 'Dompetku',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

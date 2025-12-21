@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
 import 'period_selector.dart';
 
 class ComparisonData {
@@ -50,6 +51,18 @@ class ComparisonCard extends StatelessWidget {
     ).format(amount);
   }
 
+  // Format ringkas untuk angka besar
+  String _formatCompact(double amount) {
+    if (amount.abs() >= 1000000000) {
+      return 'Rp ${(amount / 1000000000).toStringAsFixed(1)}M';
+    } else if (amount.abs() >= 1000000) {
+      return 'Rp ${(amount / 1000000).toStringAsFixed(1)}jt';
+    } else if (amount.abs() >= 1000) {
+      return 'Rp ${(amount / 1000).toStringAsFixed(0)}rb';
+    }
+    return _formatCurrency(amount);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -82,12 +95,15 @@ class ComparisonCard extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'Perbandingan ${period == AnalysisPeriod.weekly ? "Mingguan" : "Bulanan"}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: isDark ? Colors.white : Colors.black87,
+              Expanded(
+                child: Text(
+                  'Perbandingan ${period == AnalysisPeriod.weekly ? "Mingguan" : "Bulanan"}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -104,6 +120,7 @@ class ComparisonCard extends StatelessWidget {
                   expense: data.currentExpense,
                   color: Theme.of(context).primaryColor,
                   formatCurrency: _formatCurrency,
+                  formatCompact: _formatCompact,
                   isDark: isDark,
                 ),
               ),
@@ -115,6 +132,7 @@ class ComparisonCard extends StatelessWidget {
                   expense: data.previousExpense,
                   color: Colors.grey,
                   formatCurrency: _formatCurrency,
+                  formatCompact: _formatCompact,
                   isDark: isDark,
                 ),
               ),
@@ -128,7 +146,7 @@ class ComparisonCard extends StatelessWidget {
             diff: data.expenseDiff,
             diffPercent: data.expenseDiffPercent,
             isExpense: true,
-            formatCurrency: _formatCurrency,
+            formatCompact: _formatCompact,
           ),
           const SizedBox(height: 8),
 
@@ -138,7 +156,7 @@ class ComparisonCard extends StatelessWidget {
             diff: data.incomeDiff,
             diffPercent: data.incomeDiffPercent,
             isExpense: false,
-            formatCurrency: _formatCurrency,
+            formatCompact: _formatCompact,
           ),
         ],
       ),
@@ -152,6 +170,7 @@ class _PeriodCard extends StatelessWidget {
   final double expense;
   final Color color;
   final String Function(double) formatCurrency;
+  final String Function(double) formatCompact;
   final bool isDark;
 
   const _PeriodCard({
@@ -160,6 +179,7 @@ class _PeriodCard extends StatelessWidget {
     required this.expense,
     required this.color,
     required this.formatCurrency,
+    required this.formatCompact,
     required this.isDark,
   });
 
@@ -168,7 +188,7 @@ class _PeriodCard extends StatelessWidget {
     final balance = income - expense;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(14),
@@ -188,19 +208,18 @@ class _PeriodCard extends StatelessWidget {
           _InfoRow(
             icon: Icons.arrow_downward_rounded,
             label: 'Masuk',
-            value: formatCurrency(income),
+            value: formatCompact(income),
             color: Colors.green,
           ),
           const SizedBox(height: 6),
           _InfoRow(
             icon: Icons.arrow_upward_rounded,
             label: 'Keluar',
-            value: formatCurrency(expense),
+            value: formatCompact(expense),
             color: Colors.red,
           ),
           const Divider(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Saldo',
@@ -209,12 +228,16 @@ class _PeriodCard extends StatelessWidget {
                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                 ),
               ),
-              Text(
-                formatCurrency(balance),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: balance >= 0 ? Colors.green : Colors.red,
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  formatCompact(balance),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: balance >= 0 ? Colors.green : Colors.red,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -249,12 +272,16 @@ class _InfoRow extends StatelessWidget {
           style: TextStyle(fontSize: 10, color: Colors.grey[500]),
         ),
         const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: color,
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
           ),
         ),
       ],
@@ -267,20 +294,18 @@ class _ComparisonRow extends StatelessWidget {
   final double diff;
   final int diffPercent;
   final bool isExpense;
-  final String Function(double) formatCurrency;
+  final String Function(double) formatCompact;
 
   const _ComparisonRow({
     required this.label,
     required this.diff,
     required this.diffPercent,
     required this.isExpense,
-    required this.formatCurrency,
+    required this.formatCompact,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Untuk expense:  naik = buruk (merah), turun = bagus (hijau)
-    // Untuk income: naik = bagus (hijau), turun = buruk (merah)
     final isPositive = diff > 0;
     final isGood = isExpense ? !isPositive : isPositive;
     final color = isGood ? Colors.green : Colors.red;
@@ -308,10 +333,12 @@ class _ComparisonRow extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 8),
           Text(
-            '${isPositive ? '+' : ''}${formatCurrency(diff)}',
+            '${isPositive ? '+' : ''}${formatCompact(diff)}',
             style: TextStyle(
               color: color,
               fontSize: 12,

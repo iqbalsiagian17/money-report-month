@@ -148,7 +148,7 @@ class _DialogExitWrapper extends StatelessWidget {
           ],
         ),
         content: const Text(
-          'Apakah Anda yakin ingin keluar dari aplikasi Money Report?',
+          'Apakah Anda yakin ingin keluar dari aplikasi Dompetku?',
         ),
         actions: [
           TextButton(
