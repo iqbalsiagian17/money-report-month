@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:money_report_monthly/screens/transaction/widgets/shared/currency_input_formatter.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import '../../../../models/recurring_transaction.dart';
 import '../../../../providers/wallet_provider.dart';
@@ -86,18 +87,12 @@ class RecurringOptions {
     recurring.isActive = !recurring.isActive;
     recurring.save();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          recurring.isActive
-              ? '✅ ${recurring.name} diaktifkan'
-              : '⏸️ ${recurring.name} dinonaktifkan',
-        ),
-        backgroundColor: recurring.isActive ? Colors.green : Colors.orange,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+
+    SnackHelper.success(
+      context,
+      recurring.isActive
+          ? '✅ ${recurring.name} diaktifkan'
+          : '⏸️ ${recurring.name} dinonaktifkan',
     );
   }
 
@@ -148,15 +143,14 @@ class RecurringOptions {
                 if (v != null) setState(() => recurringType = v);
               },
             ),
-            if (recurringType == RecurringType.monthly) ...[
-              const SizedBox(height: 16),
-              RecurringDayDropdown(
-                selectedDay: dayOfMonth,
-                onChanged: (v) {
-                  if (v != null) setState(() => dayOfMonth = v);
-                },
-              ),
-            ],
+            const SizedBox(height: 16),
+            RecurringDayPicker(
+              selectedDay: dayOfMonth,
+              recurringType: recurringType,
+              onChanged: (v) {
+                if (v != null) setState(() => dayOfMonth = v);
+              },
+            ),
           ],
         );
       },
@@ -202,15 +196,9 @@ class RecurringOptions {
         await recurring.save();
 
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✏️ ${recurring.name} berhasil diupdate'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-            ),
+          SnackHelper.success(
+            context,
+            '✏️ ${recurring.name} berhasil diupdate',
           );
         }
 
@@ -218,7 +206,6 @@ class RecurringOptions {
       },
     );
   }
-
   // ================= DELETE =================
   static Future<void> _confirmDelete(
     BuildContext context,
@@ -244,15 +231,10 @@ class RecurringOptions {
     if (confirmed == true && context.mounted) {
       Hive.box<RecurringTransaction>('recurring').delete(recurring.id);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🗑️ ${recurring.name} berhasil dihapus'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
+
+      SnackHelper.success(
+        context,
+        '🗑️ ${recurring.name} berhasil dihapus',
       );
     }
   }

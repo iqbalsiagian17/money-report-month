@@ -24,9 +24,14 @@ class CategoryScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Kategori'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
           elevation: 0,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark, // 👉 Ikon hitam (Android)
+            statusBarBrightness: Brightness.light, // 👉 Ikon gelap (iOS)
+          ),
           actions: [
             IconButton(
               onPressed: () => CategoryOptions.showAddForm(context),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/transaction.dart';
@@ -7,6 +8,7 @@ import '../../providers/wallet_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/user_provider.dart';
+import '../category/widgets/icon_selector.dart';
 
 // Import widgets
 import 'widgets/shared/currency_input_formatter.dart';
@@ -97,10 +99,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
       opacity: _fadeAnimation,
       child: CustomScrollView(
         slivers: [
-          // Custom App Bar
           _buildAppBar(context, isDark),
-
-          // Content
           SliverToBoxAdapter(
             child: _buildForm(context, isDark),
           ),
@@ -173,6 +172,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
     final txProvider = context.watch<TransactionProvider>();
     final userProvider = context.watch<UserProvider>();
 
+    // Get selected category untuk icon
+    final selectedCategory = _selectedCategoryId != null
+        ? categoryProvider.getById(_selectedCategoryId!)
+        : null;
+
+    // Get selected wallet untuk icon
+    final selectedWallet = _selectedWalletId != null
+        ? walletProvider.wallets.firstWhere((w) => w.id == _selectedWalletId)
+        : null;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Form(
@@ -198,11 +207,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
             _SelectorCard(
               label: 'Kategori',
               icon: Icons.category_rounded,
-              value: _selectedCategoryId != null
-                  ? categoryProvider.getById(_selectedCategoryId!)?.name
+              value: selectedCategory?.name,
+              valueIcon: selectedCategory != null
+                  ? IconSelector.getIconData(selectedCategory.icon)
                   : null,
-              valueIcon: _selectedCategoryId != null
-                  ? categoryProvider.getById(_selectedCategoryId!)?.icon
+              valueIconColor: selectedCategory != null
+                  ? Color(selectedCategory.colorValue)
                   : null,
               placeholder: 'Pilih kategori',
               isDark: isDark,
@@ -216,20 +226,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
             _SelectorCard(
               label: 'Dompet',
               icon: Icons.account_balance_wallet_rounded,
-              value: _selectedWalletId != null
-                  ? walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .name
-                  : null,
-              valueIcon: _selectedWalletId != null
-                  ? walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .icon
-                  : null,
-              subtitle: _selectedWalletId != null
-                  ? _formatCurrency(walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .balance)
+              value: selectedWallet?.name,
+              valueIcon: _getWalletIcon(selectedWallet?.type),
+              valueIconColor: _getWalletColor(selectedWallet?.type),
+              subtitle: selectedWallet != null
+                  ? _formatCurrency(selectedWallet.balance)
                   : null,
               placeholder: 'Pilih dompet',
               isDark: isDark,
@@ -298,6 +299,36 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
     );
   }
 
+  IconData? _getWalletIcon(dynamic walletType) {
+    if (walletType == null) return null;
+    final typeStr = walletType.toString().split('.').last;
+    switch (typeStr) {
+      case 'cash':
+        return Icons.payments_rounded;
+      case 'bank':
+        return Icons.account_balance_rounded;
+      case 'emoney':
+        return Icons.smartphone_rounded;
+      default:
+        return Icons.account_balance_wallet_rounded;
+    }
+  }
+
+  Color? _getWalletColor(dynamic walletType) {
+    if (walletType == null) return null;
+    final typeStr = walletType.toString().split('.').last;
+    switch (typeStr) {
+      case 'cash':
+        return Colors.green;
+      case 'bank':
+        return Colors.blue;
+      case 'emoney':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _buildLimitInfo(
     UserProvider userProvider,
     TransactionProvider txProvider,
@@ -352,9 +383,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
                     color: Colors.purple.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    '🎉 Weekend',
-                    style: TextStyle(fontSize: 11, color: Colors.purple),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.celebration_rounded,
+                          size: 12, color: Colors.purple),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Weekend',
+                        style: TextStyle(fontSize: 11, color: Colors.purple),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -480,7 +519,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
     UserProvider userProvider,
     bool isDark,
   ) {
-    final categories = categoryProvider.expenseCategories;
+    final categories = categoryProvider.categories;
 
     showModalBottomSheet(
       context: context,
@@ -491,8 +530,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
         isDark: isDark,
         children: categories.map((cat) {
           final limitType = userProvider.getLimitTypeForCategory(cat.id);
-          return _PickerItem(
-            icon: cat.icon,
+          return _CategoryPickerItem(
+            iconData: IconSelector.getIconData(cat.icon),
+            iconColor: Color(cat.colorValue),
             label: cat.name,
             badge: limitType != 'none' ? _getLimitBadge(limitType) : null,
             isSelected: _selectedCategoryId == cat.id,
@@ -532,8 +572,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
         title: 'Pilih Dompet',
         isDark: isDark,
         children: walletProvider.wallets.map((wallet) {
-          return _PickerItem(
-            icon: wallet.icon ?? '💰',
+          return _WalletPickerItem(
+            iconData: _getWalletIcon(wallet.type) ??
+                Icons.account_balance_wallet_rounded,
+            iconColor: _getWalletColor(wallet.type) ?? Colors.grey,
             label: wallet.name,
             subtitle: _formatCurrency(wallet.balance),
             subtitleColor: wallet.balance > 0 ? Colors.green : Colors.red,
@@ -653,15 +695,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
       if (mounted) {
         HapticFeedback.lightImpact();
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pengeluaran berhasil disimpan!  📝'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        SnackHelper.success(context, 'Pengeluaran berhasil disimpan!');
       }
     } catch (e) {
       _showError('Gagal menyimpan:  $e');
@@ -721,14 +755,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    SnackHelper.error(context, message);
   }
 }
 
@@ -842,7 +869,8 @@ class _SelectorCard extends StatefulWidget {
   final String label;
   final IconData icon;
   final String? value;
-  final String? valueIcon;
+  final IconData? valueIcon;
+  final Color? valueIconColor;
   final String? subtitle;
   final String placeholder;
   final bool isDark;
@@ -854,6 +882,7 @@ class _SelectorCard extends StatefulWidget {
     required this.icon,
     this.value,
     this.valueIcon,
+    this.valueIconColor,
     this.subtitle,
     this.placeholder = 'Pilih',
     required this.isDark,
@@ -931,8 +960,11 @@ class _SelectorCardState extends State<_SelectorCard> {
                   Row(
                     children: [
                       if (widget.valueIcon != null) ...[
-                        Text(widget.valueIcon!,
-                            style: const TextStyle(fontSize: 16)),
+                        Icon(
+                          widget.valueIcon,
+                          size: 16,
+                          color: widget.valueIconColor ?? Colors.grey,
+                        ),
                         const SizedBox(width: 6),
                       ],
                       Expanded(
@@ -956,7 +988,7 @@ class _SelectorCardState extends State<_SelectorCard> {
                     const SizedBox(height: 2),
                     Text(
                       widget.subtitle!,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         color: Colors.green,
                       ),
@@ -1280,20 +1312,18 @@ class _PickerSheet extends StatelessWidget {
   }
 }
 
-class _PickerItem extends StatelessWidget {
-  final String icon;
+class _CategoryPickerItem extends StatelessWidget {
+  final IconData iconData;
+  final Color iconColor;
   final String label;
-  final String? subtitle;
-  final Color? subtitleColor;
   final String? badge;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _PickerItem({
-    required this.icon,
+  const _CategoryPickerItem({
+    required this.iconData,
+    required this.iconColor,
     required this.label,
-    this.subtitle,
-    this.subtitleColor,
     this.badge,
     required this.isSelected,
     required this.onTap,
@@ -1320,43 +1350,126 @@ class _PickerItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 24)),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(iconData, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                    ),
+                  ),
+                  if (badge != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        badge!,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (isSelected)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 14),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WalletPickerItem extends StatelessWidget {
+  final IconData iconData;
+  final Color iconColor;
+  final String label;
+  final String? subtitle;
+  final Color? subtitleColor;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _WalletPickerItem({
+    required this.iconData,
+    required this.iconColor,
+    required this.label,
+    this.subtitle,
+    this.subtitleColor,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).primaryColor.withOpacity(0.1)
+              : (isDark ? Colors.grey[850] : Colors.grey[100]),
+          borderRadius: BorderRadius.circular(14),
+          border: isSelected
+              ? Border.all(
+                  color: Theme.of(context).primaryColor.withOpacity(0.3))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(iconData, color: iconColor, size: 20),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color:
-                              isDark ? Colors.white : const Color(0xFF1A1A2E),
-                        ),
-                      ),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            badge!,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                    ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),

@@ -25,10 +25,13 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
   late AnimationController _particleController;
   late AnimationController _checkController;
   late AnimationController _loadingController;
+  late AnimationController _pulseController;
+  late AnimationController _confettiController;
 
   late Animation<double> _avatarScale;
-  late Animation<double> _ringScale;
-  late Animation<double> _ringOpacity;
+  late Animation<double> _ring1Scale;
+  late Animation<double> _ring2Scale;
+  late Animation<double> _ring3Scale;
   late Animation<double> _checkScale;
   late Animation<double> _textOpacity;
   late Animation<Offset> _textSlide;
@@ -36,42 +39,80 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
   late Animation<double> _loadingProgress;
 
   final List<_Particle> _particles = [];
+  final List<_Confetti> _confetti = [];
 
   @override
   void initState() {
     super.initState();
 
     // Generate celebration particles
-    for (int i = 0; i < 16; i++) {
+    final random = math.Random();
+    for (int i = 0; i < 20; i++) {
       _particles.add(_Particle(
-        angle: (math.pi * 2 / 16) * i,
-        distance: 90 + math.Random().nextDouble() * 50,
-        size: 6 + math.Random().nextDouble() * 6,
-        delay: math.Random().nextDouble() * 0.2,
+        angle: (math.pi * 2 / 20) * i,
+        distance: 100 + random.nextDouble() * 60,
+        size: 6 + random.nextDouble() * 8,
+        delay: random.nextDouble() * 0.3,
+        color: [
+          const Color(0xFF6366F1),
+          const Color(0xFF8B5CF6),
+          const Color(0xFF10B981),
+          const Color(0xFFF59E0B),
+          const Color(0xFFEC4899),
+        ][random.nextInt(5)],
+      ));
+    }
+
+    // Generate confetti
+    for (int i = 0; i < 40; i++) {
+      _confetti.add(_Confetti(
+        x: random.nextDouble(),
+        delay: random.nextDouble(),
+        speed: 0.5 + random.nextDouble() * 1.0,
+        size: 6 + random.nextDouble() * 10,
+        rotation: random.nextDouble() * math.pi * 2,
+        color: [
+          const Color(0xFF6366F1),
+          const Color(0xFF8B5CF6),
+          const Color(0xFF10B981),
+          const Color(0xFFF59E0B),
+          const Color(0xFFEC4899),
+          const Color(0xFF3B82F6),
+        ][random.nextInt(6)],
       ));
     }
 
     _mainController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2200),
     );
 
     _particleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1500),
     );
 
     _checkController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
     );
 
     _loadingController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 2800),
     );
 
-    // Avatar scale
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _confettiController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    );
+
+    // Avatar
     _avatarScale = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
@@ -79,18 +120,25 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
       ),
     );
 
-    // Ring animations
-    _ringScale = Tween<double>(begin: 0.6, end: 1.0).animate(
+    // Ring animations (staggered)
+    _ring1Scale = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: const Interval(0.15, 0.5, curve: Curves.easeOutCubic),
+        curve: const Interval(0.1, 0.5, curve: Curves.easeOutCubic),
       ),
     );
 
-    _ringOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _ring2Scale = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: const Interval(0.15, 0.4, curve: Curves.easeOut),
+        curve: const Interval(0.15, 0.55, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _ring3Scale = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _mainController,
+        curve: const Interval(0.2, 0.6, curve: Curves.easeOutCubic),
       ),
     );
 
@@ -102,7 +150,7 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
       ),
     );
 
-    // Text animations
+    // Text
     _textOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
@@ -111,7 +159,7 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
     );
 
     _textSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
+      begin: const Offset(0, 0.4),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
@@ -128,7 +176,7 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
       ),
     );
 
-    // Loading progress
+    // Loading
     _loadingProgress = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _loadingController,
@@ -141,17 +189,20 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
 
   void _startAnimations() async {
     _mainController.forward();
+    _confettiController.forward();
+
+    await Future.delayed(const Duration(milliseconds: 400));
     _particleController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 500));
-    HapticFeedback.mediumImpact();
+    await Future.delayed(const Duration(milliseconds: 300));
+    HapticFeedback.heavyImpact();
     _checkController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 400));
     _loadingController.forward();
 
     // Navigate to home
-    await Future.delayed(const Duration(milliseconds: 3200));
+    await Future.delayed(const Duration(milliseconds: 3500));
     if (mounted) {
       _navigateToHome();
     }
@@ -161,17 +212,14 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 800),
+        transitionDuration: const Duration(milliseconds: 900),
         pageBuilder: (_, __, ___) => const HomeScreen(),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(
-            opacity: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOut,
-            ),
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
             child: SlideTransition(
               position: Tween<Offset>(
-                begin: const Offset(0, 0.03),
+                begin: const Offset(0, 0.05),
                 end: Offset.zero,
               ).animate(CurvedAnimation(
                 parent: animation,
@@ -191,6 +239,8 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
     _particleController.dispose();
     _checkController.dispose();
     _loadingController.dispose();
+    _pulseController.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
@@ -199,10 +249,16 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFAFAFA),
         body: Stack(
           children: [
-            // Particles
+            // Background gradient
+            _buildBackgroundGradient(),
+
+            // Confetti
+            ..._buildConfetti(),
+
+            // Celebration particles
             ..._buildParticles(),
 
             // Main content
@@ -210,17 +266,17 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Avatar with rings
+                  // Avatar section
                   _buildAvatarSection(),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 44),
 
                   // Text content
                   _buildTextContent(),
 
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 52),
 
-                  // Loading indicator
+                  // Loading
                   _buildLoadingSection(),
                 ],
               ),
@@ -234,66 +290,162 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
     );
   }
 
-  List<Widget> _buildParticles() {
-    return List.generate(_particles.length, (index) {
-      return AnimatedBuilder(
-        animation: _particleController,
-        builder: (context, child) {
-          final particle = _particles[index];
-          final progress = ((_particleController.value - particle.delay) /
-                  (1 - particle.delay))
-              .clamp(0.0, 1.0);
-          final curvedProgress = Curves.easeOutCubic.transform(progress);
+  Widget _buildBackgroundGradient() {
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            Positioned(
+              top: -100,
+              left: -100,
+              child: Transform.scale(
+                scale: 1.0 + (_pulseController.value * 0.1),
+                child: Container(
+                  width: 400,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF6366F1).withOpacity(0.15),
+                        const Color(0xFF6366F1).withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -150,
+              right: -100,
+              child: Transform.scale(
+                scale: 1.0 + ((1 - _pulseController.value) * 0.1),
+                child: Container(
+                  width: 450,
+                  height: 450,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF10B981).withOpacity(0.12),
+                        const Color(0xFF10B981).withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-          final centerX = MediaQuery.of(context).size.width / 2;
-          final centerY = MediaQuery.of(context).size.height / 2 - 60;
+  List<Widget> _buildConfetti() {
+    return _confetti.map((c) {
+      return AnimatedBuilder(
+        animation: _confettiController,
+        builder: (context, child) {
+          final progress =
+              ((_confettiController.value - c.delay) / (1 - c.delay))
+                  .clamp(0.0, 1.0);
+          final y = -100 +
+              (MediaQuery.of(context).size.height + 200) * progress * c.speed;
+          final rotation = c.rotation + progress * math.pi * 4;
 
           return Positioned(
-            left: centerX +
-                math.cos(particle.angle) * particle.distance * curvedProgress -
-                particle.size / 2,
-            top: centerY +
-                math.sin(particle.angle) * particle.distance * curvedProgress -
-                particle.size / 2,
-            child: Opacity(
-              opacity: (1 - curvedProgress).clamp(0.0, 1.0) * 0.6,
-              child: Container(
-                width: particle.size,
-                height: particle.size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF1A1A2E).withOpacity(0.3),
+            left: c.x * MediaQuery.of(context).size.width,
+            top: y,
+            child: Transform.rotate(
+              angle: rotation,
+              child: Opacity(
+                opacity: (1 - progress).clamp(0.0, 1.0) * 0.8,
+                child: Container(
+                  width: c.size,
+                  height: c.size * 0.6,
+                  decoration: BoxDecoration(
+                    color: c.color,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
             ),
           );
         },
       );
-    });
+    }).toList();
+  }
+
+  List<Widget> _buildParticles() {
+    return _particles.map((p) {
+      return AnimatedBuilder(
+        animation: _particleController,
+        builder: (context, child) {
+          final progress =
+              ((_particleController.value - p.delay) / (1 - p.delay))
+                  .clamp(0.0, 1.0);
+          final curvedProgress = Curves.easeOutCubic.transform(progress);
+
+          final centerX = MediaQuery.of(context).size.width / 2;
+          final centerY = MediaQuery.of(context).size.height / 2 - 80;
+
+          return Positioned(
+            left: centerX +
+                math.cos(p.angle) * p.distance * curvedProgress -
+                p.size / 2,
+            top: centerY +
+                math.sin(p.angle) * p.distance * curvedProgress -
+                p.size / 2,
+            child: Opacity(
+              opacity: (1 - curvedProgress).clamp(0.0, 1.0) * 0.8,
+              child: Container(
+                width: p.size,
+                height: p.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: p.color,
+                  boxShadow: [
+                    BoxShadow(
+                      color: p.color.withOpacity(0.5),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }).toList();
   }
 
   Widget _buildAvatarSection() {
     return AnimatedBuilder(
-      animation: Listenable.merge([_mainController, _checkController]),
+      animation: Listenable.merge([
+        _mainController,
+        _checkController,
+        _pulseController,
+      ]),
       builder: (context, child) {
         return SizedBox(
-          width: 180,
-          height: 180,
+          width: 200,
+          height: 200,
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Outer ring
+              // Ring 3 (outermost)
               Transform.scale(
-                scale: _ringScale.value * 1.15,
+                scale: _ring3Scale.value * 1.3,
                 child: Opacity(
-                  opacity: _ringOpacity.value * 0.3,
+                  opacity: (_ring3Scale.value - 0.5).clamp(0.0, 1.0) * 0.2,
                   child: Container(
-                    width: 160,
-                    height: 160,
+                    width: 180,
+                    height: 180,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF1A1A2E).withOpacity(0.15),
+                        color: const Color(0xFF6366F1),
                         width: 1.5,
                       ),
                     ),
@@ -301,19 +453,38 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
                 ),
               ),
 
-              // Middle ring
+              // Ring 2
               Transform.scale(
-                scale: _ringScale.value,
+                scale: _ring2Scale.value * 1.15,
                 child: Opacity(
-                  opacity: _ringOpacity.value * 0.5,
+                  opacity: (_ring2Scale.value - 0.5).clamp(0.0, 1.0) * 0.35,
                   child: Container(
-                    width: 140,
-                    height: 140,
+                    width: 160,
+                    height: 160,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF1A1A2E).withOpacity(0.2),
+                        color: const Color(0xFF6366F1),
                         width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Ring 1 (closest)
+              Transform.scale(
+                scale: _ring1Scale.value,
+                child: Opacity(
+                  opacity: (_ring1Scale.value - 0.5).clamp(0.0, 1.0) * 0.5,
+                  child: Container(
+                    width: 145,
+                    height: 145,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF6366F1),
+                        width: 2.5,
                       ),
                     ),
                   ),
@@ -324,20 +495,20 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
               Transform.scale(
                 scale: _avatarScale.value,
                 child: Container(
-                  width: 110,
-                  height: 110,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white,
                     border: Border.all(
-                      color: const Color(0xFF1A1A2E).withOpacity(0.1),
-                      width: 2,
+                      color: const Color(0xFF6366F1).withOpacity(0.2),
+                      width: 3,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1A1A2E).withOpacity(0.1),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
+                        color: const Color(0xFF6366F1).withOpacity(0.25),
+                        blurRadius: 35,
+                        offset: const Offset(0, 15),
                       ),
                     ],
                   ),
@@ -346,14 +517,14 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
                         ? Image.file(
                             File(widget.photoPath!),
                             fit: BoxFit.cover,
-                            width: 106,
-                            height: 106,
+                            width: 114,
+                            height: 114,
                           )
                         : Container(
-                            color: const Color(0xFFF5F5F5),
+                            color: const Color(0xFFF3F4F6),
                             child: Icon(
                               Icons.person_rounded,
-                              size: 48,
+                              size: 50,
                               color: Colors.grey[400],
                             ),
                           ),
@@ -368,23 +539,27 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
                 child: Transform.scale(
                   scale: _checkScale.value,
                   child: Container(
-                    width: 38,
-                    height: 38,
+                    width: 46,
+                    height: 46,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF4CAF50).withOpacity(0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: const Color(0xFF10B981).withOpacity(0.5),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: const Icon(
                       Icons.check_rounded,
                       color: Colors.white,
-                      size: 22,
+                      size: 26,
                     ),
                   ),
                 ),
@@ -403,43 +578,48 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
         return SlideTransition(
           position: _textSlide,
           child: Opacity(
-            opacity: _textOpacity.value,
+            opacity: _textOpacity.value.clamp(0.0, 1.0),
             child: Column(
               children: [
                 // Success badge
                 Transform.scale(
-                  scale: _badgeScale.value,
+                  scale: _badgeScale.value.clamp(0.0, 2.0),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
+                      horizontal: 18,
+                      vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF10B981).withOpacity(0.15),
+                          const Color(0xFF059669).withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
                       border: Border.all(
-                        color: const Color(0xFF4CAF50).withOpacity(0.2),
-                        width: 1,
+                        color: const Color(0xFF10B981).withOpacity(0.3),
+                        width: 1.5,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 8,
+                          height: 8,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF4CAF50),
+                            color: Color(0xFF10B981),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         const Text(
                           'Profil berhasil dibuat',
                           style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF4CAF50),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF059669),
                           ),
                         ),
                       ],
@@ -447,58 +627,57 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // Welcome text
                 Text(
                   'Selamat datang',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.w500,
                     color: Colors.grey[500],
                   ),
                 ),
 
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
 
                 // Name
                 Text(
                   widget.name,
                   style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A2E),
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1F2937),
                     letterSpacing: -0.5,
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
 
                 // Subtitle
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+                    horizontal: 20,
+                    vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A2E).withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFF6366F1).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF6366F1).withOpacity(0.15),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.rocket_launch_rounded,
-                        size: 16,
-                        color: const Color(0xFF1A1A2E).withOpacity(0.7),
-                      ),
-                      const SizedBox(width: 8),
+                      const Text('🚀', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 10),
                       Text(
                         'Siap kelola keuanganmu! ',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: const Color(0xFF1A1A2E).withOpacity(0.7),
+                          color: const Color(0xFF6366F1).withOpacity(0.9),
                         ),
                       ),
                     ],
@@ -517,28 +696,55 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
       animation: Listenable.merge([_mainController, _loadingController]),
       builder: (context, child) {
         return Opacity(
-          opacity: _textOpacity.value,
+          opacity: _textOpacity.value.clamp(0.0, 1.0),
           child: Column(
             children: [
               SizedBox(
-                width: 180,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: _loadingProgress.value,
-                    backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.08),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      const Color(0xFF1A1A2E).withOpacity(0.5),
+                width: 200,
+                child: Stack(
+                  children: [
+                    // Background track
+                    Container(
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
-                    minHeight: 4,
-                  ),
+                    // Progress
+                    AnimatedBuilder(
+                      animation: _loadingController,
+                      builder: (context, child) {
+                        return FractionallySizedBox(
+                          widthFactor: _loadingProgress.value,
+                          child: Container(
+                            height: 6,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                              ),
+                              borderRadius: BorderRadius.circular(3),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      const Color(0xFF6366F1).withOpacity(0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Text(
                 'Menyiapkan dashboard...',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   color: Colors.grey[400],
                   fontWeight: FontWeight.w500,
                 ),
@@ -552,30 +758,37 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
 
   Widget _buildBottomBranding() {
     return Positioned(
-      bottom: 40,
+      bottom: 44,
       left: 0,
       right: 0,
       child: AnimatedBuilder(
         animation: _mainController,
         builder: (context, child) {
           return Opacity(
-            opacity: _textOpacity.value * 0.6,
+            opacity: (_textOpacity.value * 0.6).clamp(0.0, 1.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.verified_rounded,
-                  size: 14,
-                  color: Colors.grey[400],
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.verified_rounded,
+                    size: 14,
+                    color: Color(0xFF6366F1),
+                  ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   'Dompetku',
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[400],
-                    letterSpacing: 0.3,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[500],
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
@@ -592,11 +805,31 @@ class _Particle {
   final double distance;
   final double size;
   final double delay;
+  final Color color;
 
   _Particle({
     required this.angle,
     required this.distance,
     required this.size,
     required this.delay,
+    required this.color,
+  });
+}
+
+class _Confetti {
+  final double x;
+  final double delay;
+  final double speed;
+  final double size;
+  final double rotation;
+  final Color color;
+
+  _Confetti({
+    required this.x,
+    required this.delay,
+    required this.speed,
+    required this.size,
+    required this.rotation,
+    required this.color,
   });
 }

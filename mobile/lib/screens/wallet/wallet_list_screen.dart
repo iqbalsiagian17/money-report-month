@@ -20,15 +20,20 @@ class WalletListScreen extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // ANDROID
-        statusBarBrightness: Brightness.light, // IOS
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Dompet Saya'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
           elevation: 0,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          ),
           actions: [
             IconButton(
               onPressed: () => _showAddWalletForm(context),
@@ -45,19 +50,22 @@ class WalletListScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 WalletSection(
                   title: 'Cash',
-                  icon: '💵',
+                  icon: Icons.payments_rounded,
+                  iconColor: Colors.green,
                   wallets: provider.cashWallets,
                   onWalletTap: (wallet) => _showWalletOptions(context, wallet),
                 ),
                 WalletSection(
                   title: 'Bank',
-                  icon: '🏦',
+                  icon: Icons.account_balance_rounded,
+                  iconColor: Colors.blue,
                   wallets: provider.bankWallets,
                   onWalletTap: (wallet) => _showWalletOptions(context, wallet),
                 ),
                 WalletSection(
                   title: 'E-Money',
-                  icon: '📱',
+                  icon: Icons.smartphone_rounded,
+                  iconColor: Colors.orange,
                   wallets: provider.emoneyWallets,
                   onWalletTap: (wallet) => _showWalletOptions(context, wallet),
                 ),
@@ -67,16 +75,10 @@ class WalletListScreen extends StatelessWidget {
             );
           },
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showAddWalletForm(context),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Tambah Dompet'),
-        ),
       ),
     );
   }
 
-  // ================= EMPTY STATE =================
   Widget _buildEmptyState(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -112,7 +114,6 @@ class WalletListScreen extends StatelessWidget {
     );
   }
 
-  // ================= ADD WALLET =================
   void _showAddWalletForm(BuildContext context) {
     final nameController = TextEditingController();
     WalletType selectedType = WalletType.cash;
@@ -124,14 +125,27 @@ class WalletListScreen extends StatelessWidget {
       submitText: 'Simpan',
       cancelText: 'Batal',
       builder: (context, setState) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextFormField(
               controller: nameController,
-              decoration: const InputDecoration(
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
                 labelText: 'Nama Dompet',
                 hintText: 'Contoh: Dompet Utama',
+                prefixIcon: Icon(
+                  getWalletTypeIcon(selectedType),
+                  color: getWalletTypeColor(selectedType),
+                ),
+                filled: true,
+                fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -140,25 +154,111 @@ class WalletListScreen extends StatelessWidget {
                 return null;
               },
             ),
-            const SizedBox(height: 20),
-            const Text(
+            const SizedBox(height: 24),
+            Text(
               'Jenis Dompet',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: WalletType.values.map((type) {
-                final isSelected = selectedType == type;
-                return ChoiceChip(
-                  label: Text(_walletTypeLabel(type)),
-                  selected: isSelected,
-                  onSelected: (_) {
-                    setState(() => selectedType = type);
-                  },
-                );
-              }).toList(),
-            ),
+            const SizedBox(height: 12),
+
+            // Wallet Type Selector - Card Style
+            ...WalletType.values.map((type) {
+              final isSelected = selectedType == type;
+              return GestureDetector(
+                onTap: () => setState(() => selectedType = type),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? getWalletTypeColor(type).withOpacity(0.1)
+                        : (isDark ? Colors.grey[850] : Colors.grey[100]),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected
+                          ? getWalletTypeColor(type)
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Radio indicator
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? getWalletTypeColor(type)
+                                : Colors.grey[400]!,
+                            width: 2,
+                          ),
+                        ),
+                        child: isSelected
+                            ? Center(
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: getWalletTypeColor(type),
+                                  ),
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Icon
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: getWalletTypeColor(type).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          getWalletTypeIcon(type),
+                          color: getWalletTypeColor(type),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Text
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              getWalletTypeLabel(type),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              getWalletTypeDescription(type),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ],
         );
       },
@@ -170,18 +270,46 @@ class WalletListScreen extends StatelessWidget {
           name: nameController.text.trim(),
           type: selectedType,
           balance: 0,
-          icon: _walletTypeIcon(selectedType),
+          icon: getWalletTypeIconName(selectedType),
           createdAt: DateTime.now(),
         );
 
         await provider.addWallet(wallet);
 
-        return wallet; // ⬅️ auto close bottom sheet
+        return wallet;
       },
     );
   }
 
-  String _walletTypeLabel(WalletType type) {
+  void _showWalletOptions(BuildContext context, Wallet wallet) {
+    WalletOptions.show(context, wallet);
+  }
+
+  // ================= HELPER FUNCTIONS =================
+
+  static IconData getWalletTypeIcon(WalletType type) {
+    switch (type) {
+      case WalletType.cash:
+        return Icons.payments_rounded;
+      case WalletType.bank:
+        return Icons.account_balance_rounded;
+      case WalletType.emoney:
+        return Icons.smartphone_rounded;
+    }
+  }
+
+  static Color getWalletTypeColor(WalletType type) {
+    switch (type) {
+      case WalletType.cash:
+        return Colors.green;
+      case WalletType.bank:
+        return Colors.blue;
+      case WalletType.emoney:
+        return Colors.orange;
+    }
+  }
+
+  static String getWalletTypeLabel(WalletType type) {
     switch (type) {
       case WalletType.cash:
         return 'Cash';
@@ -192,19 +320,25 @@ class WalletListScreen extends StatelessWidget {
     }
   }
 
-  String _walletTypeIcon(WalletType type) {
+  static String getWalletTypeDescription(WalletType type) {
     switch (type) {
       case WalletType.cash:
-        return '💵';
+        return 'Uang tunai di dompet fisik';
       case WalletType.bank:
-        return '🏦';
+        return 'Rekening bank atau tabungan';
       case WalletType.emoney:
-        return '📱';
+        return 'GoPay, OVO, Dana, ShopeePay, dll';
     }
   }
 
-  // ================= WALLET OPTIONS =================
-  void _showWalletOptions(BuildContext context, Wallet wallet) {
-    WalletOptions.show(context, wallet);
+  static String getWalletTypeIconName(WalletType type) {
+    switch (type) {
+      case WalletType.cash:
+        return 'payments';
+      case WalletType.bank:
+        return 'account_balance';
+      case WalletType.emoney:
+        return 'smartphone';
+    }
   }
 }

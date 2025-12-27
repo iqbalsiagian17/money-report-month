@@ -18,7 +18,7 @@ import 'widget/balance_card.dart';
 import 'widget/limit_status_card.dart';
 import 'widget/quick_actions_grid.dart';
 import 'widget/recent_transactions.dart';
-import 'widget/todo_status_card.dart'; // <-- Tambahkan import
+import 'widget/todo_status_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,17 +34,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<double> _headerAnimation;
   late Animation<double> _contentAnimation;
   late Animation<double> _navAnimation;
-
-  late final List<Widget> _screens = [
-    _HomeContent(
-      entranceController: _entranceController,
-      headerAnimation: _headerAnimation,
-      contentAnimation: _contentAnimation,
-    ),
-    const TransactionHistoryScreen(),
-    const AnalysisScreen(),
-    const SettingsScreen(),
-  ];
 
   @override
   void initState() {
@@ -100,9 +89,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  // Method untuk switch tab
+  void _switchToTab(int index) {
+    setState(() => _currentIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Build screens di dalam build() agar bisa pass callback
+    final screens = <Widget>[
+      _HomeContent(
+        entranceController: _entranceController,
+        headerAnimation: _headerAnimation,
+        contentAnimation: _contentAnimation,
+        onViewAllTransactions: () => _switchToTab(1), // Index 1 = Riwayat
+      ),
+      const TransactionHistoryScreen(),
+      const AnalysisScreen(),
+      const SettingsScreen(),
+    ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
@@ -113,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
           body: IndexedStack(
             index: _currentIndex,
-            children: _screens,
+            children: screens,
           ),
           bottomNavigationBar: AnimatedBuilder(
             animation: _navAnimation,
@@ -195,11 +202,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         case 'income':
           Navigator.pushNamed(context, AppRoutes.addIncome);
           break;
-
         case 'expense':
           Navigator.pushNamed(context, AppRoutes.addExpense);
           break;
-
         case 'transfer':
           Navigator.pushNamed(context, AppRoutes.transfer);
           break;
@@ -212,11 +217,13 @@ class _HomeContent extends StatefulWidget {
   final AnimationController entranceController;
   final Animation<double> headerAnimation;
   final Animation<double> contentAnimation;
+  final VoidCallback? onViewAllTransactions;
 
   const _HomeContent({
     required this.entranceController,
     required this.headerAnimation,
     required this.contentAnimation,
+    this.onViewAllTransactions,
   });
 
   @override
@@ -232,9 +239,8 @@ class _HomeContentState extends State<_HomeContent>
   void initState() {
     super.initState();
 
-    // Create staggered animations for each card (5 cards now including Todo)
     _cardControllers = List.generate(
-      5, // Balance, Limit, QuickActions, Todo, Recent
+      5,
       (index) => AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 500),
@@ -247,7 +253,6 @@ class _HomeContentState extends State<_HomeContent>
       );
     }).toList();
 
-    // Start card animations after content animation starts
     widget.contentAnimation.addListener(_onContentAnimationUpdate);
   }
 
@@ -279,8 +284,6 @@ class _HomeContentState extends State<_HomeContent>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: () async {
@@ -316,20 +319,25 @@ class _HomeContentState extends State<_HomeContent>
                   _buildAnimatedCard(0, const BalanceCard()),
                   const SizedBox(height: 20),
 
-                  // Todo Status Card <-- Tambahkan di sini
+                  // Todo Status Card
                   _buildAnimatedCard(3, const TodoStatusCard()),
+                  const SizedBox(height: 20),
+
+                  // Quick Actions
+                  _buildAnimatedCard(2, const QuickActionsGrid()),
                   const SizedBox(height: 20),
 
                   // Limit Status Card
                   _buildAnimatedCard(1, const LimitStatusCard()),
                   const SizedBox(height: 20),
 
-                  // Quick Actions Grid
-                  _buildAnimatedCard(2, const QuickActionsGrid()),
-                  const SizedBox(height: 20),
-
-                  // Recent Transactions
-                  _buildAnimatedCard(4, const RecentTransactions()),
+                  // Recent Transactions - dengan callback
+                  _buildAnimatedCard(
+                    4,
+                    RecentTransactions(
+                      onViewAllTap: widget.onViewAllTransactions,
+                    ),
+                  ),
                   const SizedBox(height: 100),
                 ]),
               ),

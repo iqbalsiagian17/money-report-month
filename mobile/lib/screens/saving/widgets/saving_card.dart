@@ -65,6 +65,10 @@ class SavingCard extends StatelessWidget {
                 _buildAmountInfo(currencyFormat, progressPercent, isCompleted,
                     context, isDark),
 
+                // Wallet Info - Di mana dana disimpan
+                const SizedBox(height: 14),
+                _buildWalletInfo(context, isDark, currencyFormat),
+
                 // Deposit Button
                 if (!isCompleted) ...[
                   const SizedBox(height: 16),
@@ -124,21 +128,12 @@ class SavingCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Row(
-                children: [
-                  Text(
-                    wallet?.icon ?? '💰',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    wallet?.name ?? 'Unknown',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              Text(
+                'Target: ${_formatCompact(saving.targetAmount)}',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -150,12 +145,12 @@ class SavingCard extends StatelessWidget {
               color: Colors.green.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.check, size: 14, color: Colors.green),
-                const SizedBox(width: 4),
-                const Text(
+                Icon(Icons.check, size: 14, color: Colors.green),
+                SizedBox(width: 4),
+                Text(
                   'Tercapai',
                   style: TextStyle(
                     color: Colors.green,
@@ -232,15 +227,15 @@ class SavingCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              'Target',
+              'Kurang',
               style: TextStyle(fontSize: 11, color: Colors.grey[500]),
             ),
             Text(
-              format.format(saving.targetAmount),
+              format.format(saving.remaining > 0 ? saving.remaining : 0),
               style: TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 15,
-                color: Colors.grey[600],
+                color: Colors.orange,
               ),
             ),
           ],
@@ -249,25 +244,122 @@ class SavingCard extends StatelessWidget {
     );
   }
 
+  Widget _buildWalletInfo(
+      BuildContext context, bool isDark, NumberFormat format) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[850] : Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(
+              child: Text(
+                wallet?.icon ?? '💰',
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Disimpan di',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[500],
+                  ),
+                ),
+                Text(
+                  wallet?.name ?? 'Dompet tidak ditemukan',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Wallet type badge
+          if (wallet != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getWalletTypeColor(wallet!.type).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                wallet!.typeLabel,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: _getWalletTypeColor(wallet!.type),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _getWalletTypeColor(WalletType type) {
+    switch (type) {
+      case WalletType.cash:
+        return Colors.green;
+      case WalletType.bank:
+        return Colors.blue;
+      case WalletType.emoney:
+        return Colors.orange;
+    }
+  }
+
+  String _formatCompact(double amount) {
+    if (amount >= 1000000000) {
+      return 'Rp ${(amount / 1000000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000000) {
+      return 'Rp ${(amount / 1000000).toStringAsFixed(1)}jt';
+    } else if (amount >= 1000) {
+      return 'Rp ${(amount / 1000).toStringAsFixed(0)}rb';
+    }
+    return 'Rp ${amount.toStringAsFixed(0)}';
+  }
+
   Widget _buildDepositButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton.icon(
+      child: ElevatedButton.icon(
         onPressed: onDeposit,
-        style: OutlinedButton.styleFrom(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 12),
-          side: BorderSide(color: Theme.of(context).primaryColor),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          elevation: 0,
         ),
-        icon: Icon(Icons.add_rounded, color: Theme.of(context).primaryColor),
-        label: Text(
+        icon: const Icon(Icons.add_rounded, size: 20),
+        label: const Text(
           'Setor Tabungan',
-          style: TextStyle(
-            color: Theme.of(context).primaryColor,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -298,8 +390,8 @@ class SavingCard extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             isOverdue
-                ? 'Lewat ${daysRemaining.abs()} hari'
-                : '$daysRemaining hari lagi',
+                ? 'Lewat ${daysRemaining.abs()} hari dari target'
+                : 'Target: $daysRemaining hari lagi',
             style: TextStyle(
               fontSize: 12,
               color: isOverdue ? Colors.red : Colors.blue,

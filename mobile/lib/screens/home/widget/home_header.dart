@@ -14,6 +14,7 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userProvider = context.read<UserProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ValueListenableBuilder<Box<UserProfile>>(
       valueListenable: Hive.box<UserProfile>('user_profile').listenable(),
@@ -21,8 +22,7 @@ class HomeHeader extends StatelessWidget {
         final profile = box.isNotEmpty ? box.getAt(0) : null;
         final name = profile?.name ?? 'User';
 
-        // ⬇️ greeting random (tapi konsisten per rebuild)
-        final greeting = _randomGreeting();
+        final greeting = _getGreeting();
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -36,28 +36,44 @@ class HomeHeader extends StatelessWidget {
                 child: _UserAvatar(photoPath: profile?.photoPath),
               ),
 
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
 
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      greeting,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
+                    // Greeting dengan icon
+                    Row(
+                      children: [
+                        Icon(
+                          greeting.icon,
+                          size: 14,
+                          color: greeting.iconColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            greeting.text,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
                   ],
@@ -70,34 +86,130 @@ class HomeHeader extends StatelessWidget {
     );
   }
 
-// ================= GREETING RANDOM =================
-  String _randomGreeting() {
-    final greetings = [
-      'Halo 👋',
-      'Hai 😊',
-      'Selamat datang ✨',
-      'Apa kabar hari ini?',
-      'Semoga harimu menyenangkan 🌤️',
-      'Yuk catat keuangan hari ini 💰',
-      'Siap mengatur keuangan? 📊',
-      'Tetap hemat ya 😉',
-      'Semangat terus 🔥',
-      'Selamat beraktivitas 🚀',
-      'Jangan lupa catat transaksi 🧾',
-      'Keuangan rapi, hidup tenang 😌',
-      'Hari baru, catatan baru 📒',
-      'Ayo mulai hari produktifmu 💪',
-      'Uang terkontrol, hati pun tenang 🧠',
-      'Sedikit demi sedikit jadi bukit ⛰️',
-      'Catat sekarang, tenang kemudian 🧘',
-      'Mulai hari dengan perencanaan 💡',
-    ];
-
+  // ================= GREETING BERDASARKAN WAKTU =================
+  _GreetingData _getGreeting() {
+    final hour = DateTime.now().hour;
     final random = Random();
-    return greetings[random.nextInt(greetings.length)];
+
+    // Greeting berdasarkan waktu
+    if (hour >= 5 && hour < 12) {
+      // Pagi (05:00 - 11:59)
+      final morningGreetings = [
+        _GreetingData(
+          text: 'Selamat pagi',
+          icon: Icons.wb_sunny_rounded,
+          iconColor: Colors.orange,
+        ),
+        _GreetingData(
+          text: 'Pagi yang cerah',
+          icon: Icons.light_mode_rounded,
+          iconColor: Colors.amber,
+        ),
+        _GreetingData(
+          text: 'Semangat pagi',
+          icon: Icons.local_fire_department_rounded,
+          iconColor: Colors.deepOrange,
+        ),
+        _GreetingData(
+          text: 'Mulai hari produktif',
+          icon: Icons.rocket_launch_rounded,
+          iconColor: Colors.blue,
+        ),
+      ];
+      return morningGreetings[random.nextInt(morningGreetings.length)];
+    } else if (hour >= 12 && hour < 15) {
+      // Siang (12:00 - 14:59)
+      final noonGreetings = [
+        _GreetingData(
+          text: 'Selamat siang',
+          icon: Icons.wb_sunny_rounded,
+          iconColor: Colors.orange,
+        ),
+        _GreetingData(
+          text: 'Tetap semangat',
+          icon: Icons.bolt_rounded,
+          iconColor: Colors.amber,
+        ),
+        _GreetingData(
+          text: 'Jangan lupa istirahat',
+          icon: Icons.coffee_rounded,
+          iconColor: Colors.brown,
+        ),
+        _GreetingData(
+          text: 'Lanjutkan aktivitasmu',
+          icon: Icons.trending_up_rounded,
+          iconColor: Colors.green,
+        ),
+      ];
+      return noonGreetings[random.nextInt(noonGreetings.length)];
+    } else if (hour >= 15 && hour < 18) {
+      // Sore (15:00 - 17:59)
+      final afternoonGreetings = [
+        _GreetingData(
+          text: 'Selamat sore',
+          icon: Icons.wb_twilight_rounded,
+          iconColor: Colors.orange,
+        ),
+        _GreetingData(
+          text: 'Sore yang indah',
+          icon: Icons.cloud_rounded,
+          iconColor: Colors.blueGrey,
+        ),
+        _GreetingData(
+          text: 'Hampir selesai hari ini',
+          icon: Icons.task_alt_rounded,
+          iconColor: Colors.green,
+        ),
+        _GreetingData(
+          text: 'Yuk catat transaksi',
+          icon: Icons.edit_note_rounded,
+          iconColor: Colors.blue,
+        ),
+      ];
+      return afternoonGreetings[random.nextInt(afternoonGreetings.length)];
+    } else {
+      // Malam (18:00 - 04:59)
+      final nightGreetings = [
+        _GreetingData(
+          text: 'Selamat malam',
+          icon: Icons.nightlight_rounded,
+          iconColor: Colors.indigo,
+        ),
+        _GreetingData(
+          text: 'Malam yang tenang',
+          icon: Icons.bedtime_rounded,
+          iconColor: Colors.deepPurple,
+        ),
+        _GreetingData(
+          text: 'Istirahat yang cukup',
+          icon: Icons.self_improvement_rounded,
+          iconColor: Colors.teal,
+        ),
+        _GreetingData(
+          text: 'Cek keuangan hari ini',
+          icon: Icons.account_balance_wallet_rounded,
+          iconColor: Colors.green,
+        ),
+      ];
+      return nightGreetings[random.nextInt(nightGreetings.length)];
+    }
   }
 }
 
+// ================= GREETING DATA CLASS =================
+class _GreetingData {
+  final String text;
+  final IconData icon;
+  final Color iconColor;
+
+  _GreetingData({
+    required this.text,
+    required this.icon,
+    required this.iconColor,
+  });
+}
+
+// ================= USER AVATAR =================
 class _UserAvatar extends StatelessWidget {
   final String? photoPath;
 
@@ -105,13 +217,58 @@ class _UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CircleAvatar(
-      radius: 22,
-      backgroundColor: Colors.grey.shade200,
-      backgroundImage: _imageProvider(),
-      child: _imageProvider() == null
-          ? const Icon(Icons.person, color: Colors.grey)
-          : null,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isDark ? Colors.grey[800] : Colors.grey[200],
+        border: Border.all(
+          color: Theme.of(context).primaryColor.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: _buildImage(isDark),
+      ),
+    );
+  }
+
+  Widget _buildImage(bool isDark) {
+    final imageProvider = _imageProvider();
+
+    if (imageProvider != null) {
+      return Image(
+        image: imageProvider,
+        fit: BoxFit.cover,
+        width: 48,
+        height: 48,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildPlaceholder(isDark);
+        },
+      );
+    }
+
+    return _buildPlaceholder(isDark);
+  }
+
+  Widget _buildPlaceholder(bool isDark) {
+    return Container(
+      color: isDark ? Colors.grey[800] : Colors.grey[200],
+      child: Icon(
+        Icons.person_rounded,
+        size: 26,
+        color: isDark ? Colors.grey[500] : Colors.grey[400],
+      ),
     );
   }
 

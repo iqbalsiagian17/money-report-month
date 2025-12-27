@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import '../../../../providers/auth_provider.dart';
 
@@ -16,27 +17,42 @@ class _SetPinDialogState extends State<SetPinDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_step == 1 ? 'Buat PIN Baru' : 'Konfirmasi PIN'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _step == 1 ? 'Masukkan 6 digit PIN' : 'Masukkan ulang PIN Anda',
-            style: const TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          _buildPinIndicator(),
-          const SizedBox(height: 24),
-          _buildPinKeypad(),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Batal'),
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _step == 1 ? 'Buat PIN Baru' : 'Konfirmasi PIN',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _step == 1 ? 'Masukkan 6 digit PIN' : 'Masukkan ulang PIN Anda',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            _buildPinIndicator(),
+            const SizedBox(height: 24),
+            _buildPinKeypad(),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Batal',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -45,15 +61,20 @@ class _SetPinDialogState extends State<SetPinDialog> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(6, (index) {
+        final isFilled = index < currentPin.length;
         return Container(
-          width: 16,
-          height: 16,
-          margin: const EdgeInsets.symmetric(horizontal: 6),
+          width: 14,
+          height: 14,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: index < currentPin.length
-                ? Theme.of(context).primaryColor
-                : Colors.grey[300],
+            color:
+                isFilled ? Theme.of(context).primaryColor : Colors.transparent,
+            border: Border.all(
+              color:
+                  isFilled ? Theme.of(context).primaryColor : Colors.grey[400]!,
+              width: 2,
+            ),
           ),
         );
       }),
@@ -62,6 +83,7 @@ class _SetPinDialogState extends State<SetPinDialog> {
 
   Widget _buildPinKeypad() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _buildKeypadRow(['1', '2', '3']),
         const SizedBox(height: 8),
@@ -72,14 +94,17 @@ class _SetPinDialogState extends State<SetPinDialog> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            const SizedBox(width: 56),
+            const SizedBox(width: 52, height: 52),
             _buildPinKey('0'),
             SizedBox(
-              width: 56,
-              height: 56,
+              width: 52,
+              height: 52,
               child: IconButton(
                 onPressed: _onBackspace,
-                icon: const Icon(Icons.backspace_outlined),
+                icon: Icon(
+                  Icons.backspace_outlined,
+                  color: Colors.grey[700],
+                ),
               ),
             ),
           ],
@@ -97,17 +122,21 @@ class _SetPinDialogState extends State<SetPinDialog> {
 
   Widget _buildPinKey(String value) {
     return SizedBox(
-      width: 56,
-      height: 56,
+      width: 52,
+      height: 52,
       child: TextButton(
         onPressed: () => _onKeyPressed(value),
         style: TextButton.styleFrom(
           shape: const CircleBorder(),
-          backgroundColor: Colors.grey[200],
+          backgroundColor: Colors.grey[100],
         ),
         child: Text(
           value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
         ),
       ),
     );
@@ -141,19 +170,17 @@ class _SetPinDialogState extends State<SetPinDialog> {
     if (_pin == _confirmPin) {
       context.read<AuthProvider>().setPin(_pin);
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PIN berhasil dibuat! '),
-          backgroundColor: Colors.green,
-        ),
+      SnackHelper.success(
+        context,
+        'PIN berhasil dibuat! ',
       );
     } else {
-      setState(() => _confirmPin = '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PIN tidak cocok, coba lagi'),
-          backgroundColor: Colors.red,
-        ),
+      setState(() {
+        _confirmPin = '';
+      });
+      SnackHelper.error(
+        context,
+        'PIN tidak cocok, coba lagi',
       );
     }
   }

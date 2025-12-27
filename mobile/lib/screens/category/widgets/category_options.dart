@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import '../../../models/category.dart';
 import '../../../providers/category_provider.dart';
@@ -6,7 +7,6 @@ import '../../../widgets/bottom_sheet/app_bottom_sheet.dart';
 import '../../../widgets/bottom_sheet/variants/options_bottom_sheet.dart';
 import '../../../widgets/bottom_sheet/variants/info_bottom_sheet.dart';
 
-// Form Fields
 import 'category_form_fields.dart';
 import 'icon_selector.dart';
 import 'color_selector.dart';
@@ -36,7 +36,7 @@ class CategoryOptions {
     final action = await AppBottomSheet.showOptions<CategoryOptionAction>(
       context: context,
       title: category.name,
-      subtitle: '${category.icon} Kategori Custom',
+      subtitle: 'Kategori Custom',
       options: const [
         BottomSheetOption(
           title: 'Edit Kategori',
@@ -71,46 +71,52 @@ class CategoryOptions {
   // ================= ADD CATEGORY =================
   static void showAddForm(BuildContext context) {
     final nameController = TextEditingController();
-    String selectedIcon = '📦';
+    String selectedIcon = 'receipt_long';
     Color selectedColor = const Color(0xFF5DADE2);
 
     AppBottomSheet.showForm<bool>(
       context: context,
       title: 'Kategori Baru',
-      subtitle: 'Buat kategori pengeluaran custom',
+      subtitle: 'Buat kategori custom',
       submitText: 'Simpan',
       builder: (context, setState) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Preview
-            CategoryPreview(
-              name: nameController.text,
-              icon: selectedIcon,
-              color: selectedColor,
-            ),
-            const SizedBox(height: 20),
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Preview
+              CategoryPreview(
+                name: nameController.text.isEmpty
+                    ? 'Nama Kategori'
+                    : nameController.text,
+                icon: selectedIcon,
+                color: selectedColor,
+              ),
+              const SizedBox(height: 24),
 
-            // Name Field
-            CategoryNameField(
-              controller: nameController,
-              onChanged: () => setState(() {}),
-            ),
-            const SizedBox(height: 20),
+              // Name Field
+              CategoryNameField(
+                controller: nameController,
+                selectedIcon: selectedIcon,
+                iconColor: selectedColor,
+                onChanged: () => setState(() {}),
+              ),
+              const SizedBox(height: 20),
 
-            // Icon Selector
-            IconSelector(
-              selectedIcon: selectedIcon,
-              onChanged: (icon) => setState(() => selectedIcon = icon),
-            ),
-            const SizedBox(height: 20),
+              // Icon Selector
+              IconSelector(
+                selectedIcon: selectedIcon,
+                onChanged: (icon) => setState(() => selectedIcon = icon),
+              ),
+              const SizedBox(height: 20),
 
-            // Color Selector
-            ColorSelector(
-              selectedColor: selectedColor,
-              onChanged: (color) => setState(() => selectedColor = color),
-            ),
-          ],
+              // Color Selector
+              ColorSelector(
+                selectedColor: selectedColor,
+                onChanged: (color) => setState(() => selectedColor = color),
+              ),
+            ],
+          ),
         );
       },
       onSubmit: () async {
@@ -124,6 +130,7 @@ class CategoryOptions {
           name: nameController.text.trim(),
           icon: selectedIcon,
           colorValue: selectedColor.value,
+          isDefault: false,
         );
 
         await context.read<CategoryProvider>().addCategory(category);
@@ -150,37 +157,43 @@ class CategoryOptions {
       subtitle: 'Ubah detail ${category.name}',
       submitText: 'Simpan Perubahan',
       builder: (context, setState) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Preview
-            CategoryPreview(
-              name: nameController.text,
-              icon: selectedIcon,
-              color: selectedColor,
-            ),
-            const SizedBox(height: 20),
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Preview
+              CategoryPreview(
+                name: nameController.text.isEmpty
+                    ? 'Nama Kategori'
+                    : nameController.text,
+                icon: selectedIcon,
+                color: selectedColor,
+              ),
+              const SizedBox(height: 24),
 
-            // Name Field
-            CategoryNameField(
-              controller: nameController,
-              onChanged: () => setState(() {}),
-            ),
-            const SizedBox(height: 20),
+              // Name Field
+              CategoryNameField(
+                controller: nameController,
+                selectedIcon: selectedIcon,
+                iconColor: selectedColor,
+                onChanged: () => setState(() {}),
+              ),
+              const SizedBox(height: 20),
 
-            // Icon Selector
-            IconSelector(
-              selectedIcon: selectedIcon,
-              onChanged: (icon) => setState(() => selectedIcon = icon),
-            ),
-            const SizedBox(height: 20),
+              // Icon Selector
+              IconSelector(
+                selectedIcon: selectedIcon,
+                onChanged: (icon) => setState(() => selectedIcon = icon),
+              ),
+              const SizedBox(height: 20),
 
-            // Color Selector
-            ColorSelector(
-              selectedColor: selectedColor,
-              onChanged: (color) => setState(() => selectedColor = color),
-            ),
-          ],
+              // Color Selector
+              ColorSelector(
+                selectedColor: selectedColor,
+                onChanged: (color) => setState(() => selectedColor = color),
+              ),
+            ],
+          ),
         );
       },
       onSubmit: () async {
@@ -233,40 +246,10 @@ class CategoryOptions {
 
   // ================= SNACKBAR HELPERS =================
   static void _showSuccess(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    SnackHelper.success(context, message);
   }
 
   static void _showError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded,
-                color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    SnackHelper.error(context, message);
   }
 }

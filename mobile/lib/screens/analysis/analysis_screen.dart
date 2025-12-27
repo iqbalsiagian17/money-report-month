@@ -25,19 +25,28 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // ANDROID → icon hitam
-        statusBarBrightness: Brightness.light, // IOS → icon hitam
+        // Dynamic berdasarkan theme
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
       ),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Analisis Keuangan'),
           automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
           elevation: 0,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          foregroundColor: isDark ? Colors.white : Colors.black87,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness:
+                isDark ? Brightness.light : Brightness.dark,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+          ),
         ),
         body: Consumer2<TransactionProvider, CategoryProvider>(
           builder: (context, txProvider, categoryProvider, _) {
@@ -94,7 +103,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         previousLabel: 'Minggu Lalu',
       );
     } else {
-      // Monthly - we need last month data
       return ComparisonData(
         currentIncome: txProvider.thisMonthIncome,
         currentExpense: txProvider.thisMonthExpense,

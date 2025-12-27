@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import '../../../../providers/wallet_provider.dart';
 import '../../../../providers/category_provider.dart';
@@ -42,11 +43,9 @@ class ResetDataDialog extends StatelessWidget {
       await context.read<CategoryProvider>().initDefaultCategories();
 
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Semua data berhasil direset'),
-          backgroundColor: Colors.green,
-        ),
+      SnackHelper.success(
+        context,
+        'Semua data berhasil direset',
       );
     }
   }

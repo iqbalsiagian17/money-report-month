@@ -178,44 +178,53 @@ class RecurringWalletDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return DropdownButtonFormField<String>(
-      value: selectedWalletId,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: 'Dompet Tujuan',
-        prefixIcon: const Icon(Icons.account_balance_wallet_rounded),
-        filled: true,
-        fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[850] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(14),
       ),
-      items: wallets.map((wallet) {
-        return DropdownMenuItem(
-          value: wallet.id,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(wallet.icon ?? '💰', style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  wallet.name,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+      child: DropdownButtonFormField<String>(
+        value: selectedWalletId,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: 'Dompet Tujuan',
+          prefixIcon: const Icon(Icons.account_balance_wallet_rounded),
+          filled: false,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
           ),
-        );
-      }).toList(),
-      onChanged: onChanged,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        dropdownColor: isDark ? Colors.grey[850] : Colors.white,
+        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+        items: wallets.map((wallet) {
+          return DropdownMenuItem(
+            value: wallet.id,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(wallet.icon ?? '💰', style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    wallet.name,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+        onChanged: onChanged,
+      ),
     );
   }
 }
 
 class RecurringPeriodDropdown extends StatelessWidget {
-  final RecurringType selectedType;
+  final RecurringType? selectedType;
   final ValueChanged<RecurringType?> onChanged;
 
   const RecurringPeriodDropdown({
@@ -224,102 +233,271 @@ class RecurringPeriodDropdown extends StatelessWidget {
     required this.onChanged,
   });
 
+  String _getPeriodLabel(RecurringType type) {
+    switch (type) {
+      case RecurringType.daily:
+        return 'Harian';
+      case RecurringType.weekly:
+        return 'Mingguan';
+      case RecurringType.monthly:
+        return 'Bulanan';
+      case RecurringType.yearly:
+        return 'Tahunan';
+    }
+  }
+
+  IconData _getPeriodIcon(RecurringType type) {
+    switch (type) {
+      case RecurringType.daily:
+        return Icons.today_rounded;
+      case RecurringType.weekly:
+        return Icons.view_week_rounded;
+      case RecurringType.monthly:
+        return Icons.calendar_month_rounded;
+      case RecurringType.yearly:
+        return Icons.event_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DropdownButtonFormField<RecurringType>(
-      value: selectedType,
+      value: selectedType, // sekarang bisa null
       decoration: InputDecoration(
-        labelText: 'Periode',
+        hintText: 'Periode',
+        hintStyle: TextStyle(
+          color: Colors.grey[500],
+          fontWeight: FontWeight.w500,
+        ),
         prefixIcon: const Icon(Icons.repeat_rounded),
         filled: true,
         fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
       ),
-      items: const [
-        DropdownMenuItem(
-          value: RecurringType.daily,
+      borderRadius: BorderRadius.circular(14),
+      dropdownColor: isDark ? Colors.grey[850] : Colors.white,
+      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+
+      items: RecurringType.values.map((type) {
+        return DropdownMenuItem(
+          value: type,
           child: Row(
             children: [
-              Icon(Icons.today_rounded, size: 18),
-              SizedBox(width: 8),
-              Text('Harian'),
+              Icon(_getPeriodIcon(type), size: 18),
+              const SizedBox(width: 8),
+              Text(_getPeriodLabel(type)),
             ],
           ),
-        ),
-        DropdownMenuItem(
-          value: RecurringType.weekly,
-          child: Row(
-            children: [
-              Icon(Icons.view_week_rounded, size: 18),
-              SizedBox(width: 8),
-              Text('Mingguan'),
-            ],
-          ),
-        ),
-        DropdownMenuItem(
-          value: RecurringType.monthly,
-          child: Row(
-            children: [
-              Icon(Icons.calendar_month_rounded, size: 18),
-              SizedBox(width: 8),
-              Text('Bulanan'),
-            ],
-          ),
-        ),
-        DropdownMenuItem(
-          value: RecurringType.yearly,
-          child: Row(
-            children: [
-              Icon(Icons.event_rounded, size: 18),
-              SizedBox(width: 8),
-              Text('Tahunan'),
-            ],
-          ),
-        ),
-      ],
+        );
+      }).toList(),
+
       onChanged: onChanged,
+      validator: (value) =>
+          value == null ? 'Pilih periode terlebih dahulu' : null,
     );
   }
 }
 
-class RecurringDayDropdown extends StatelessWidget {
+class RecurringDayPicker extends StatelessWidget {
   final int selectedDay;
+  final RecurringType recurringType;
   final ValueChanged<int?> onChanged;
 
-  const RecurringDayDropdown({
+  const RecurringDayPicker({
     super.key,
     required this.selectedDay,
+    required this.recurringType,
     required this.onChanged,
+  });
+
+  Future<void> _showDayPicker(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // tanggal harus 1 - 28
+    final validDay = selectedDay.clamp(1, 28);
+    final now = DateTime.now();
+    final initialDate = DateTime(now.year, now.month, validDay);
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(now.year, now.month, 1),
+      lastDate: DateTime(now.year, now.month, 28),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              surface: isDark ? Colors.grey[850]! : Colors.white,
+              onSurface: isDark ? Colors.white : Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      onChanged(picked.day.clamp(1, 28));
+    }
+  }
+
+  String _getDisplayText() {
+    switch (recurringType) {
+      case RecurringType.daily:
+        return 'Setiap Hari';
+      case RecurringType.weekly:
+        return 'Setiap ${_getWeekdayName(selectedDay)}';
+      case RecurringType.monthly:
+        return 'Tanggal $selectedDay';
+      case RecurringType.yearly:
+        return 'Tanggal $selectedDay';
+    }
+  }
+
+  String _getWeekdayName(int day) {
+    const weekdays = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu'
+    ];
+    return weekdays[(day - 1) % 7];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (recurringType != RecurringType.monthly) {
+      return const SizedBox.shrink();
+    }
+
+    return GestureDetector(
+      onTap: () => _showDayPicker(context),
+      child: AbsorbPointer(
+        child: TextFormField(
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: 'Tanggal Eksekusi',
+            prefixIcon: const Icon(Icons.calendar_month_rounded),
+            hintText: selectedDay == 0 ? 'Pilih tanggal' : _getDisplayText(),
+            filled: true,
+            fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DayPickerSheet extends StatelessWidget {
+  final int selectedDay;
+  final ValueChanged<int> onDaySelected;
+
+  const _DayPickerSheet({
+    required this.selectedDay,
+    required this.onDaySelected,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return DropdownButtonFormField<int>(
-      value: selectedDay,
-      decoration: InputDecoration(
-        labelText: 'Tanggal Eksekusi',
-        prefixIcon: const Icon(Icons.calendar_today_rounded),
-        filled: true,
-        fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      items: List.generate(28, (i) => i + 1).map((day) {
-        return DropdownMenuItem(
-          value: day,
-          child: Text('Tanggal $day'),
-        );
-      }).toList(),
-      onChanged: onChanged,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[400],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Pilih Tanggal',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 300,
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: 28,
+              itemBuilder: (context, index) {
+                final day = index + 1;
+                final isSelected = day == selectedDay;
+
+                return GestureDetector(
+                  onTap: () => onDaySelected(day),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.blue : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected ? Colors.blue : Colors.grey[300]!,
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$day',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.white : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 }

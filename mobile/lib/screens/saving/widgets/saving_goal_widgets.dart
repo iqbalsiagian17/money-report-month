@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import '../../../models/saving_goal.dart';
-import '../../../models/wallet.dart';
 import '../../../providers/saving_provider.dart';
 import '../../../providers/wallet_provider.dart';
 import '../../transaction/widgets/shared/currency_input_formatter.dart';
@@ -451,18 +450,11 @@ class _DepositDialogState extends State<DepositDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-
-        SnackHelper.success(
-          context,
-          'Berhasil menyetor ${_formatCurrency(amount)}',
-        );
+        SnackHelper.success(context, 'Berhasil menyetor ${_formatCurrency(amount)}');
       }
     } catch (e) {
       if (mounted) {
-        SnackHelper.error(
-          context,
-          'Gagal menyetor: $e',
-        );
+        SnackHelper.error(context, 'Gagal menyetor: $e');
       }
     } finally {
       if (mounted) {

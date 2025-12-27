@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/category.dart';
 import 'category_options.dart';
+import 'icon_selector.dart';
 
 class CategoryTile extends StatelessWidget {
   final CategoryModel category;
@@ -14,6 +15,7 @@ class CategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final categoryColor = Color(category.colorValue);
+    final iconData = IconSelector.getIconData(category.icon);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -39,8 +41,30 @@ class CategoryTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                _buildIcon(categoryColor),
+                // Icon Container
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        categoryColor.withOpacity(0.25),
+                        categoryColor.withOpacity(0.1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    iconData,
+                    color: categoryColor,
+                    size: 26,
+                  ),
+                ),
                 const SizedBox(width: 14),
+
+                // Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,11 +77,13 @@ class CategoryTile extends StatelessWidget {
                           color: isDark ? Colors.white : Colors.black87,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      _buildSubtitle(categoryColor),
+                      const SizedBox(height: 6),
+                      _buildBadges(categoryColor),
                     ],
                   ),
                 ),
+
+                // Arrow
                 Icon(
                   Icons.chevron_right_rounded,
                   color: Colors.grey[400],
@@ -70,57 +96,56 @@ class CategoryTile extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon(Color categoryColor) {
-    return Container(
-      width: 52,
-      height: 52,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            categoryColor.withOpacity(0.25),
-            categoryColor.withOpacity(0.1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Center(
-        child: Text(
-          category.icon,
-          style: const TextStyle(fontSize: 26),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubtitle(Color categoryColor) {
+  Widget _buildBadges(Color categoryColor) {
     return Row(
       children: [
+        // Color indicator
         Container(
-          width: 8,
-          height: 8,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             color: categoryColor,
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: categoryColor.withOpacity(0.4),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
+
+        // Default/Custom badge
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: category.isDefault
                 ? Colors.blue.withOpacity(0.1)
                 : Colors.purple.withOpacity(0.1),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Text(
-            category.isDefault ? 'Default' : 'Custom',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: category.isDefault ? Colors.blue : Colors.purple,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                category.isDefault
+                    ? Icons.verified_rounded
+                    : Icons.tune_rounded,
+                size: 10,
+                color: category.isDefault ? Colors.blue : Colors.purple,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                category.isDefault ? 'Default' : 'Custom',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: category.isDefault ? Colors.blue : Colors.purple,
+                ),
+              ),
+            ],
           ),
         ),
       ],

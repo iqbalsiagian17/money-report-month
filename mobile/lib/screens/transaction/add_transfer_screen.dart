@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/transaction.dart';
@@ -567,15 +568,7 @@ class _AddTransferScreenState extends State<AddTransferScreen>
       if (mounted) {
         HapticFeedback.lightImpact();
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Transfer berhasil!  🔄'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        SnackHelper.success(context, 'Transfer berhasil!');
       }
     } catch (e) {
       _showError('Gagal transfer: $e');
@@ -585,14 +578,7 @@ class _AddTransferScreenState extends State<AddTransferScreen>
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    SnackHelper.error(context, 'Gagal transfer');
   }
 }
 

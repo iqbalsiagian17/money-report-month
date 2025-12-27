@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  final Box _box = Hive.box('settings');
+  Box get _box => Hive.isBoxOpen('settings')
+      ? Hive.box('settings')
+      : throw HiveError('Settings box is not open');
 
   ThemeMode get themeMode {
     final isDark = _box.get('isDarkMode', defaultValue: false);
@@ -17,12 +19,14 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Future<void> toggleTheme() async {
-    await _box.put('isDarkMode', !isDarkMode);
+    final box = _box; // ensure opened
+    await box.put('isDarkMode', !isDarkMode);
     notifyListeners();
   }
 
   Future<void> setPrimaryColor(Color color) async {
-    await _box.put('primaryColor', color.value);
+    final box = _box; // ensure opened
+    await box.put('primaryColor', color.value);
     notifyListeners();
   }
 

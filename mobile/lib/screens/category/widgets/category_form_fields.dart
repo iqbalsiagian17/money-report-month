@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'icon_selector.dart';
 
 // ================= CATEGORY NAME FIELD =================
 class CategoryNameField extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback? onChanged;
+  final String? selectedIcon;
+  final Color? iconColor;
 
   const CategoryNameField({
     super.key,
     required this.controller,
     this.onChanged,
+    this.selectedIcon,
+    this.iconColor,
   });
 
   @override
@@ -21,8 +26,11 @@ class CategoryNameField extends StatelessWidget {
       onChanged: (_) => onChanged?.call(),
       decoration: InputDecoration(
         labelText: 'Nama Kategori',
-        hintText: 'Contoh:  Skincare, Laundry',
-        prefixIcon: const Icon(Icons.label_rounded),
+        hintText: 'Contoh: Skincare, Laundry',
+        prefixIcon: Icon(
+          IconSelector.getIconData(selectedIcon),
+          color: iconColor ?? Theme.of(context).primaryColor,
+        ),
         filled: true,
         fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
         border: OutlineInputBorder(
@@ -56,27 +64,36 @@ class CategoryPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconData = IconSelector.getIconData(icon);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[850] : Colors.grey[100],
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+        ),
       ),
       child: Row(
         children: [
+          // Icon
           Container(
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 28)),
+            child: Icon(
+              iconData,
+              color: color,
+              size: 28,
             ),
           ),
           const SizedBox(width: 14),
+
+          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +108,7 @@ class CategoryPreview extends StatelessWidget {
                         : (isDark ? Colors.white : Colors.black87),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   children: [
                     Container(
@@ -102,7 +119,7 @@ class CategoryPreview extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Text(
                       'Preview',
                       style: TextStyle(fontSize: 12, color: Colors.grey[500]),
@@ -110,6 +127,20 @@ class CategoryPreview extends StatelessWidget {
                   ],
                 ),
               ],
+            ),
+          ),
+
+          // Preview badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.visibility_rounded,
+              color: color,
+              size: 16,
             ),
           ),
         ],
@@ -134,12 +165,16 @@ class CategoryDeletePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconData = IconSelector.getIconData(icon);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.grey[100],
+        color: Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.red.withOpacity(0.3),
+        ),
       ),
       child: Row(
         children: [
@@ -147,11 +182,13 @@ class CategoryDeletePreview extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(
-              child: Text(icon, style: const TextStyle(fontSize: 24)),
+            child: Icon(
+              iconData,
+              color: color,
+              size: 24,
             ),
           ),
           const SizedBox(width: 14),
@@ -162,30 +199,26 @@ class CategoryDeletePreview extends StatelessWidget {
                 Text(
                   name,
                   style: TextStyle(
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Custom',
-                      style: TextStyle(fontSize: 12, color: Colors.purple[400]),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  'Akan dihapus permanen',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red[400],
+                  ),
                 ),
               ],
             ),
+          ),
+          Icon(
+            Icons.delete_forever_rounded,
+            color: Colors.red[400],
+            size: 24,
           ),
         ],
       ),

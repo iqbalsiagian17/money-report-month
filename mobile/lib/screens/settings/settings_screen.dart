@@ -159,7 +159,7 @@ class SettingsScreen extends StatelessWidget {
                           icon: Icons.info_rounded,
                           iconColor: Colors.grey,
                           title: 'Tentang Aplikasi',
-                          subtitle: 'Versi BETA',
+                          subtitle: 'Versi 1.0.0',
                           onTap: () => SettingsOptions.showAbout(context),
                         ),
                         SettingsTile(

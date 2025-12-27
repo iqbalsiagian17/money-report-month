@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:money_report_monthly/config/routes.dart';
 import 'package:hive/hive.dart';
+import 'package:money_report_monthly/models/category.dart';
+import 'package:money_report_monthly/models/custom_notification.dart';
+import 'package:money_report_monthly/models/recurring_transaction.dart';
+import 'package:money_report_monthly/models/saving_goal.dart';
+import 'package:money_report_monthly/models/todo.dart';
+import 'package:money_report_monthly/models/transaction.dart';
+import 'package:money_report_monthly/models/user_profile.dart';
+import 'package:money_report_monthly/models/wallet.dart';
+import 'package:money_report_monthly/screens/settings/widgets/settings/reset_success_screen.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import '../../../../providers/theme_provider.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../providers/user_provider.dart';
-import '../../../../models/user_profile.dart';
 import '../../../../widgets/bottom_sheet/app_bottom_sheet.dart';
 import '../../../../widgets/bottom_sheet/variants/options_bottom_sheet.dart';
 import '../../../../widgets/bottom_sheet/variants/info_bottom_sheet.dart';
@@ -206,6 +216,8 @@ class SettingsOptions {
     }
   }
 
+  // Ganti method _showSetPinForm di settings_options.dart dengan ini:
+
   static void _showSetPinForm(BuildContext context, AuthProvider authProvider) {
     String pin = '';
     String confirmPin = '';
@@ -214,30 +226,31 @@ class SettingsOptions {
     AppBottomSheet.show(
       context: context,
       title: authProvider.isLockEnabled ? 'Ubah PIN' : 'Buat PIN',
-      subtitle: 'Masukkan 4 digit PIN',
+      subtitle: 'Masukkan 6 digit PIN',
       child: StatefulBuilder(
         builder: (context, setState) {
           return Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // PIN Display
+              // PIN Display - 6 digits
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (index) {
+                children: List.generate(6, (index) {
                   final currentPin = isConfirming ? confirmPin : pin;
                   final isFilled = index < currentPin.length;
                   return Container(
-                    width: 48,
-                    height: 48,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 40,
+                    height: 40,
+                    margin: const EdgeInsets.symmetric(horizontal: 5),
                     decoration: BoxDecoration(
                       color: isFilled
                           ? Theme.of(context).primaryColor
                           : Colors.grey.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: isFilled
                         ? const Icon(Icons.circle,
-                            color: Colors.white, size: 12)
+                            color: Colors.white, size: 10)
                         : null,
                   );
                 }),
@@ -247,16 +260,16 @@ class SettingsOptions {
                 isConfirming ? 'Konfirmasi PIN' : 'Masukkan PIN baru',
                 style: TextStyle(color: Colors.grey[500], fontSize: 13),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // Numpad
+              // Numpad - Responsive
               _buildNumpad(
                 onNumber: (num) {
                   HapticFeedback.lightImpact();
                   if (isConfirming) {
-                    if (confirmPin.length < 4) {
+                    if (confirmPin.length < 6) {
                       setState(() => confirmPin += num);
-                      if (confirmPin.length == 4) {
+                      if (confirmPin.length == 6) {
                         if (pin == confirmPin) {
                           authProvider.setPin(pin);
                           Navigator.pop(context);
@@ -272,9 +285,9 @@ class SettingsOptions {
                       }
                     }
                   } else {
-                    if (pin.length < 4) {
+                    if (pin.length < 6) {
                       setState(() => pin += num);
-                      if (pin.length == 4) {
+                      if (pin.length == 6) {
                         setState(() => isConfirming = true);
                       }
                     }
@@ -290,7 +303,7 @@ class SettingsOptions {
                   }
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
             ],
           );
         },
@@ -511,17 +524,17 @@ class SettingsOptions {
       context: context,
       title: 'Dompetku',
       message:
-          'Aplikasi pencatatan keuangan pribadi yang simpel dan mudah digunakan.\n\nVersi BETA \n\nDibuat dengan ❤️ \n\n APLIKASI INI MASIH BETA DAN MASIH TAHAP TESTING.  BEBERAPA FITUR MUNGKIN BELUM BERFUNGSI DENGAN SEMESTINYA.  TERIMA KASIH ATAS PENGERTIAN DAN DUKUNGANNYA!',
+          'Dompetku adalah aplikasi pencatatan keuangan pribadi yang simpel dan mudah digunakan.\n\nVersi 1.0.0\n\nDibuat dengan ❤️.\n\nAplikasi ini masih dalam tahap pengembangan aktif. Beberapa fitur tambahan akan hadir di update selanjutnya.',
       type: InfoType.info,
       icon: Icons.info_rounded,
     );
   }
 
-  // ================= RESET DATA =================
+// ================= RESET DATA (ROBUST) =================
   static Future<void> showResetConfirm(BuildContext context) async {
     final confirmed = await AppBottomSheet.showConfirm(
       context: context,
-      title: 'Reset Semua Data?',
+      title: 'Reset Semua Data? ',
       message:
           'Semua data termasuk transaksi, dompet, kategori, dan pengaturan akan dihapus secara permanen.  Tindakan ini TIDAK DAPAT dibatalkan.',
       isDanger: true,
@@ -530,55 +543,148 @@ class SettingsOptions {
     );
 
     if (confirmed == true && context.mounted) {
-      await Hive.deleteFromDisk();
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => PopScope(
+          canPop: false,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Menghapus semua data...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 
-      if (context.mounted) {
-        AppBottomSheet.showSuccess(
-          context: context,
-          title: 'Data Berhasil Direset',
-          message: 'Silakan restart aplikasi untuk memulai dari awal.',
+      try {
+        // Clear all typed boxes
+        await _clearAllTypedBoxes();
+
+        // Small delay
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        if (!context.mounted) return;
+
+        // Close loading dialog
+        Navigator.of(context).pop();
+
+        // Navigate to reset success screen with countdown
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return ResetSuccessScreen(
+                onComplete: () {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.onboarding,
+                    (route) => false,
+                  );
+                },
+              );
+            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOut,
+                ),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+          (route) => false,
         );
+      } catch (e) {
+        debugPrint('Reset error: $e');
+        if (context.mounted) {
+          Navigator.of(context).pop();
+          _showError(context, 'Gagal mereset data:  $e');
+        }
       }
+    }
+  }
+
+// Clear all boxes with correct types
+  static Future<void> _clearAllTypedBoxes() async {
+    // Clear generic/untyped boxes
+    await _safeClearGenericBox('settings');
+    await _safeClearGenericBox('app_state');
+
+    // Clear typed boxes with their correct types
+    await _safeClearTypedBox<UserProfile>('user_profile');
+    await _safeClearTypedBox<Wallet>('wallets');
+    await _safeClearTypedBox<TransactionModel>('transactions');
+    await _safeClearTypedBox<SavingGoal>('saving_goal');
+    await _safeClearTypedBox<CategoryModel>('categories');
+    await _safeClearTypedBox<Todo>('todo');
+    await _safeClearTypedBox<RecurringTransaction>('recurring');
+    await _safeClearTypedBox<CustomNotification>('custom_notifications');
+  }
+
+// Safe clear for typed boxes
+  static Future<bool> _safeClearTypedBox<T>(String boxName) async {
+    try {
+      if (Hive.isBoxOpen(boxName)) {
+        final box = Hive.box<T>(boxName);
+        await box.clear();
+        debugPrint('✓ Cleared typed box: $boxName');
+        return true;
+      } else {
+        debugPrint('⚠ Typed box "$boxName" not open, skipping');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('✗ Error clearing typed box "$boxName": $e');
+      return false;
+    }
+  }
+
+// Safe clear for generic/untyped boxes
+  static Future<bool> _safeClearGenericBox(String boxName) async {
+    try {
+      if (Hive.isBoxOpen(boxName)) {
+        final box = Hive.box(boxName);
+        await box.clear();
+        debugPrint('✓ Cleared generic box:  $boxName');
+        return true;
+      } else {
+        debugPrint('⚠ Generic box "$boxName" not open, skipping');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('✗ Error clearing generic box "$boxName": $e');
+      return false;
     }
   }
 
   // ================= SNACKBAR HELPERS =================
   static void _showSuccess(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    SnackHelper.success(context, message);
   }
 
   static void _showError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded,
-                color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    SnackHelper.error(context, message);
   }
 }
 

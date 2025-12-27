@@ -30,9 +30,14 @@ class SavingListScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Tabungan Saya'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
           elevation: 0,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark, // Android: ikon hitam
+            statusBarBrightness: Brightness.light, // iOS: background terang
+          ),
           actions: [
             IconButton(
               onPressed: () => _showAddSavingSheet(context),
@@ -89,11 +94,6 @@ class SavingListScreen extends StatelessWidget {
               ],
             );
           },
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showAddSavingSheet(context),
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Target Baru'),
         ),
       ),
     );

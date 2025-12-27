@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:hive/hive.dart';
 
@@ -12,7 +13,7 @@ import '../transaction/widgets/shared/currency_input_formatter.dart';
 // Widgets
 import 'widgets/recurring_section.dart';
 import 'widgets/empty_recurring_state.dart';
-import 'widgets/recurring_options.dart'; // Updated import
+import 'widgets/recurring_options.dart';
 import 'widgets/recurring_form_fields.dart';
 
 class RecurringScreen extends StatelessWidget {
@@ -26,15 +27,20 @@ class RecurringScreen extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // ANDROID → ikon hitam
-        statusBarBrightness: Brightness.light, // IOS
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Transaksi Rutin'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
           elevation: 0,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark, // Ikon status bar hitam
+            statusBarBrightness: Brightness.light, // Untuk iOS
+          ),
           actions: [
             IconButton(
               onPressed: () => _showAddRecurringSheet(context),
@@ -62,7 +68,6 @@ class RecurringScreen extends StatelessWidget {
               children: [
                 RecurringSection(
                   title: 'Pemasukan Rutin',
-                  icon: '💰',
                   items: income,
                   getWallet: walletProvider.getById,
                   onItemTap: (item) => RecurringOptions.show(context, item),
@@ -72,7 +77,6 @@ class RecurringScreen extends StatelessWidget {
                   const SizedBox(height: 28),
                 RecurringSection(
                   title: 'Pengeluaran Rutin',
-                  icon: '💸',
                   items: expense,
                   getWallet: walletProvider.getById,
                   onItemTap: (item) => RecurringOptions.show(context, item),
@@ -94,8 +98,8 @@ class RecurringScreen extends StatelessWidget {
 
     bool isIncome = false;
     String? selectedWalletId;
-    RecurringType recurringType = RecurringType.monthly;
-    int dayOfMonth = 1;
+    RecurringType? recurringType;
+    int? dayOfMonth;
 
     AppBottomSheet.showForm<bool>(
       context: context,
@@ -127,19 +131,16 @@ class RecurringScreen extends StatelessWidget {
             const SizedBox(height: 16),
             RecurringPeriodDropdown(
               selectedType: recurringType,
-              onChanged: (v) {
-                if (v != null) setState(() => recurringType = v);
-              },
+              onChanged: (v) => setState(() => recurringType = v),
             ),
-            if (recurringType == RecurringType.monthly) ...[
-              const SizedBox(height: 16),
-              RecurringDayDropdown(
-                selectedDay: dayOfMonth,
-                onChanged: (v) {
-                  if (v != null) setState(() => dayOfMonth = v);
-                },
+            const SizedBox(height: 16),
+            if (recurringType == RecurringType.monthly ||
+                recurringType == RecurringType.yearly)
+              RecurringDayPicker(
+                selectedDay: dayOfMonth ?? 1,
+                recurringType: recurringType!,
+                onChanged: (v) => setState(() => dayOfMonth = v),
               ),
-            ],
           ],
         );
       },
@@ -162,11 +163,17 @@ class RecurringScreen extends StatelessWidget {
           return null;
         }
 
+        if (recurringType == null) {
+          _showValidationError(
+              context, 'Pilih periode transaksi terlebih dahulu');
+          return null;
+        }
+
         // Calculate next due date
         final now = DateTime.now();
         DateTime nextDue;
 
-        switch (recurringType) {
+        switch (recurringType!) {
           case RecurringType.daily:
             nextDue = DateTime(now.year, now.month, now.day + 1);
             break;
@@ -174,9 +181,9 @@ class RecurringScreen extends StatelessWidget {
             nextDue = now.add(Duration(days: 7 - now.weekday + 1));
             break;
           case RecurringType.monthly:
-            nextDue = DateTime(now.year, now.month, dayOfMonth);
+            nextDue = DateTime(now.year, now.month, dayOfMonth ?? 1);
             if (!nextDue.isAfter(now)) {
-              nextDue = DateTime(now.year, now.month + 1, dayOfMonth);
+              nextDue = DateTime(now.year, now.month + 1, dayOfMonth ?? 1);
             }
             break;
           case RecurringType.yearly:
@@ -190,8 +197,8 @@ class RecurringScreen extends StatelessWidget {
           amount: amount,
           isIncome: isIncome,
           walletId: selectedWalletId!,
-          recurringType: recurringType,
-          dayOfMonth: dayOfMonth,
+          recurringType: recurringType!,
+          dayOfMonth: dayOfMonth!,
           nextDueDate: nextDue,
         );
 
@@ -199,16 +206,8 @@ class RecurringScreen extends StatelessWidget {
 
         // Show success
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ ${recurring.name} berhasil ditambahkan'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-            ),
-          );
+          SnackHelper.success(
+              context, '✅ ${recurring.name} berhasil ditambahkan');
         }
 
         return true;
@@ -217,21 +216,6 @@ class RecurringScreen extends StatelessWidget {
   }
 
   void _showValidationError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded,
-                color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
+    SnackHelper.error(context, message);
   }
 }

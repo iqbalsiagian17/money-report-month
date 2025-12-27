@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/transaction.dart';
+import '../../models/wallet.dart';
 import '../../providers/wallet_provider.dart';
 import '../../providers/transaction_provider.dart';
 
-// Import widgets
 import 'widgets/shared/currency_input_formatter.dart';
 
 class AddIncomeScreen extends StatefulWidget {
@@ -22,8 +23,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
 
-  String?  _selectedWalletId;
-  String _selectedSource = 'Gaji';
+  String? _selectedWalletId;
+  String _selectedSource = 'salary';
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _isLoading = false;
@@ -31,23 +32,72 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
+  // Income sources dengan Flutter icons
   static const List<Map<String, dynamic>> _incomeSources = [
-    {'name': 'Gaji', 'icon': '💼', 'color': Color(0xFF2196F3)},
-    {'name': 'Bonus', 'icon': '🎁', 'color': Color(0xFFE91E63)},
-    {'name': 'Hadiah', 'icon': '🎉', 'color': Color(0xFF9C27B0)},
-    {'name': 'Usaha', 'icon': '🏪', 'color': Color(0xFFFF9800)},
-    {'name': 'Investasi', 'icon': '📈', 'color': Color(0xFF4CAF50)},
-    {'name': 'Freelance', 'icon': '💻', 'color': Color(0xFF00BCD4)},
-    {'name': 'Pinjaman', 'icon': '🤝', 'color': Color(0xFF795548)},
-    {'name': 'Lainnya', 'icon': '💰', 'color': Color(0xFF607D8B)},
+    {
+      'id': 'salary',
+      'name': 'Gaji',
+      'icon': Icons.work_rounded,
+      'color': Color(0xFF2196F3)
+    },
+    {
+      'id': 'bonus',
+      'name': 'Bonus',
+      'icon': Icons.redeem_rounded,
+      'color': Color(0xFFE91E63)
+    },
+    {
+      'id': 'gift',
+      'name': 'Hadiah',
+      'icon': Icons.card_giftcard_rounded,
+      'color': Color(0xFF9C27B0)
+    },
+    {
+      'id': 'business',
+      'name': 'Usaha',
+      'icon': Icons.storefront_rounded,
+      'color': Color(0xFFFF9800)
+    },
+    {
+      'id': 'investment',
+      'name': 'Investasi',
+      'icon': Icons.trending_up_rounded,
+      'color': Color(0xFF4CAF50)
+    },
+    {
+      'id': 'freelance',
+      'name': 'Freelance',
+      'icon': Icons.laptop_rounded,
+      'color': Color(0xFF00BCD4)
+    },
+    {
+      'id': 'loan',
+      'name': 'Pinjaman',
+      'icon': Icons.handshake_rounded,
+      'color': Color(0xFF795548)
+    },
+    {
+      'id': 'other',
+      'name': 'Lainnya',
+      'icon': Icons.attach_money_rounded,
+      'color': Color(0xFF607D8B)
+    },
   ];
 
   String _formatCurrency(double amount) {
     return NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
-      decimalDigits:  0,
+      decimalDigits: 0,
     ).format(amount);
+  }
+
+  String _getSourceName(String sourceId) {
+    final source = _incomeSources.firstWhere(
+      (s) => s['id'] == sourceId,
+      orElse: () => _incomeSources.last,
+    );
+    return source['name'];
   }
 
   @override
@@ -60,7 +110,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve:  Curves.easeOutCubic),
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
     );
 
     _animController.forward();
@@ -74,6 +124,32 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
     super.dispose();
   }
 
+  IconData _getWalletIcon(WalletType? type) {
+    switch (type) {
+      case WalletType.cash:
+        return Icons.payments_rounded;
+      case WalletType.bank:
+        return Icons.account_balance_rounded;
+      case WalletType.emoney:
+        return Icons.smartphone_rounded;
+      default:
+        return Icons.account_balance_wallet_rounded;
+    }
+  }
+
+  Color _getWalletColor(WalletType? type) {
+    switch (type) {
+      case WalletType.cash:
+        return Colors.green;
+      case WalletType.bank:
+        return Colors.blue;
+      case WalletType.emoney:
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -81,7 +157,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+        backgroundColor:
+            isDark ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _buildBody(context, isDark),
@@ -91,8 +168,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
 
   Widget _buildBody(BuildContext context, bool isDark) {
     return FadeTransition(
-      opacity:  _fadeAnimation,
-      child:  CustomScrollView(
+      opacity: _fadeAnimation,
+      child: CustomScrollView(
         slivers: [
           _buildAppBar(context, isDark),
           SliverToBoxAdapter(
@@ -109,7 +186,18 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
       floating: false,
       pinned: true,
       backgroundColor: Colors.green,
-      leading: _BackButton(onTap: () => Navigator.pop(context)),
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.arrow_back_rounded,
+              color: Colors.white, size: 20),
+        ),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         title: const Text(
           'Pemasukan',
@@ -120,7 +208,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
         ),
         background: Container(
           decoration: const BoxDecoration(
-            gradient:  LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
@@ -138,8 +226,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
                   width: 150,
                   height: 150,
                   decoration: BoxDecoration(
-                    shape:  BoxShape.circle,
-                    color: Colors.white. withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
                   ),
                 ),
               ),
@@ -149,7 +237,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
                 child: Icon(
                   Icons.arrow_downward_rounded,
                   size: 40,
-                  color: Colors. white. withOpacity(0.2),
+                  color: Colors.white.withOpacity(0.2),
                 ),
               ),
             ],
@@ -161,6 +249,9 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
 
   Widget _buildForm(BuildContext context, bool isDark) {
     final walletProvider = context.watch<WalletProvider>();
+    final selectedWallet = _selectedWalletId != null
+        ? walletProvider.wallets.firstWhere((w) => w.id == _selectedWalletId)
+        : null;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -170,96 +261,103 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Amount Card
-            _AmountCard(
-              controller: _amountController,
-              color: Colors.green,
-              isDark: isDark,
-            ),
-
+            _buildAmountCard(isDark),
             const SizedBox(height: 20),
 
             // Income Source Grid
             _buildSourceSection(isDark),
-
             const SizedBox(height: 16),
 
             // Wallet Selector
-            _SelectorCard(
-              label: 'Simpan ke Dompet',
-              icon: Icons.account_balance_wallet_rounded,
-              value: _selectedWalletId != null
-                  ? walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .name
-                  : null,
-              valueIcon: _selectedWalletId != null
-                  ? walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .icon
-                  : null,
-              subtitle: _selectedWalletId != null
-                  ? _formatCurrency(walletProvider.wallets
-                      .firstWhere((w) => w.id == _selectedWalletId)
-                      .balance)
-                  : null,
-              placeholder: 'Pilih dompet',
-              isDark: isDark,
-              onTap: () => _showWalletPicker(context, walletProvider, isDark),
-            ),
-
+            _buildWalletSelector(selectedWallet, isDark, walletProvider),
             const SizedBox(height: 12),
 
             // Date Time Row
             Row(
               children: [
-                Expanded(
-                  child:  _SelectorCard(
-                    label:  'Tanggal',
-                    icon: Icons.calendar_today_rounded,
-                    value: DateFormat('dd MMM yyyy', 'id').format(_selectedDate),
-                    isDark: isDark,
-                    compact: true,
-                    onTap: () => _pickDate(context),
-                  ),
-                ),
+                Expanded(child: _buildDateSelector(isDark)),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: _SelectorCard(
-                    label: 'Waktu',
-                    icon: Icons. access_time_rounded,
-                    value: _selectedTime.format(context),
-                    isDark: isDark,
-                    compact: true,
-                    onTap: () => _pickTime(context),
-                  ),
-                ),
+                Expanded(child: _buildTimeSelector(isDark)),
               ],
             ),
-
             const SizedBox(height: 12),
 
             // Note Field
-            _NoteCard(
-              controller: _noteController,
-              isDark:  isDark,
-              hintText: 'Catatan (opsional)',
-            ),
-
-            const SizedBox(height:  24),
+            _buildNoteField(isDark),
+            const SizedBox(height: 24),
 
             // Save Button
-            _SaveButton(
-              label: 'Simpan Pemasukan',
-              color: Colors.green,
-              icon: Icons.arrow_downward_rounded,
-              isEnabled: true,
-              isLoading: _isLoading,
-              onTap: _saveIncome,
-            ),
-
-            const SizedBox(height:  40),
+            _buildSaveButton(),
+            const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAmountCard(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.green.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Jumlah',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text(
+                'Rp',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.green,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [CurrencyInputFormatter()],
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '0',
+                    hintStyle: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[300],
+                    ),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -268,15 +366,15 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ?  const Color(0xFF1E1E1E) : Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: isDark
             ? null
             : [
                 BoxShadow(
-                  color:  Colors.black.withOpacity(0.04),
-                  blurRadius:  10,
-                  offset:  const Offset(0, 4),
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
       ),
@@ -288,10 +386,11 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors. green.withOpacity(0.1),
+                  color: Colors.green.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child:  const Icon(Icons.source_rounded, color: Colors.green, size: 18),
+                child: const Icon(Icons.source_rounded,
+                    color: Colors.green, size: 18),
               ),
               const SizedBox(width: 10),
               const Text(
@@ -302,29 +401,317 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
           ),
           const SizedBox(height: 16),
           GridView.builder(
-            shrinkWrap:  true,
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
-              crossAxisSpacing:  10,
-              mainAxisSpacing:  10,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
               childAspectRatio: 0.85,
             ),
             itemCount: _incomeSources.length,
             itemBuilder: (context, index) {
               final source = _incomeSources[index];
-              final isSelected = _selectedSource == source['name'];
+              final isSelected = _selectedSource == source['id'];
 
               return _SourceChip(
                 icon: source['icon'],
                 label: source['name'],
                 color: source['color'],
-                isSelected:  isSelected,
-                onTap: () => setState(() => _selectedSource = source['name']),
+                isSelected: isSelected,
+                onTap: () => setState(() => _selectedSource = source['id']),
               );
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWalletSelector(
+      Wallet? selectedWallet, bool isDark, WalletProvider walletProvider) {
+    return GestureDetector(
+      onTap: () => _showWalletPicker(context, walletProvider, isDark),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? Colors.grey[800]!
+                : const Color(0xFF1A1A2E).withOpacity(0.08),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.account_balance_wallet_rounded,
+                color: Theme.of(context).primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Simpan ke Dompet',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      if (selectedWallet != null) ...[
+                        Icon(
+                          _getWalletIcon(selectedWallet.type),
+                          size: 16,
+                          color: _getWalletColor(selectedWallet.type),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: Text(
+                          selectedWallet?.name ?? 'Pilih dompet',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: selectedWallet != null
+                                ? (isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1A1A2E))
+                                : Colors.grey[400],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (selectedWallet != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatCurrency(selectedWallet.balance),
+                      style: const TextStyle(fontSize: 11, color: Colors.green),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded,
+                color: Colors.grey[400], size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateSelector(bool isDark) {
+    return GestureDetector(
+      onTap: () => _pickDate(context),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? Colors.grey[800]!
+                : const Color(0xFF1A1A2E).withOpacity(0.08),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.calendar_today_rounded,
+                color: Theme.of(context).primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tanggal',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat('dd MMM yyyy', 'id').format(_selectedDate),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeSelector(bool isDark) {
+    return GestureDetector(
+      onTap: () => _pickTime(context),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? Colors.grey[800]!
+                : const Color(0xFF1A1A2E).withOpacity(0.08),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.access_time_rounded,
+                color: Theme.of(context).primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Waktu',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _selectedTime.format(context),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoteField(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.grey[800]!
+              : const Color(0xFF1A1A2E).withOpacity(0.08),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.note_rounded, color: Colors.grey[500], size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _noteController,
+              maxLines: 2,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              ),
+              decoration: InputDecoration(
+                hintText: 'Catatan (opsional)',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return GestureDetector(
+      onTap: _isLoading ? null : _saveIncome,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.green,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_isLoading)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            else ...[
+              const Icon(Icons.arrow_downward_rounded,
+                  color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              const Text(
+                'Simpan Pemasukan',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -335,25 +722,128 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
     bool isDark,
   ) {
     showModalBottomSheet(
-      context:  context,
+      context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _PickerSheet(
-        title: 'Pilih Dompet',
-        isDark: isDark,
-        children: walletProvider.wallets. map((wallet) {
-          return _PickerItem(
-            icon: wallet.icon ??  '💰',
-            label: wallet.name,
-            subtitle: _formatCurrency(wallet.balance),
-            subtitleColor: wallet. balance > 0 ? Colors.green : Colors.red,
-            isSelected: _selectedWalletId == wallet.id,
-            onTap: () {
-              setState(() => _selectedWalletId = wallet.id);
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Pilih Dompet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                shrinkWrap: true,
+                children: walletProvider.wallets.map((wallet) {
+                  final isSelected = _selectedWalletId == wallet.id;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _selectedWalletId = wallet.id);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Theme.of(context).primaryColor.withOpacity(0.1)
+                            : (isDark ? Colors.grey[850] : Colors.grey[100]),
+                        borderRadius: BorderRadius.circular(14),
+                        border: isSelected
+                            ? Border.all(
+                                color: Theme.of(context)
+                                    .primaryColor
+                                    .withOpacity(0.3))
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _getWalletColor(wallet.type)
+                                  .withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              _getWalletIcon(wallet.type),
+                              color: _getWalletColor(wallet.type),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  wallet.name,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF1A1A2E),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _formatCurrency(wallet.balance),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: wallet.balance > 0
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isSelected)
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.check,
+                                  color: Colors.white, size: 14),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -363,7 +853,7 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime. now().add(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
     );
     if (date != null) {
       setState(() => _selectedDate = date);
@@ -383,7 +873,8 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
   Future<void> _saveIncome() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final amount = CurrencyInputFormatter.getNumericValue(_amountController.text);
+    final amount =
+        CurrencyInputFormatter.getNumericValue(_amountController.text);
 
     if (amount <= 0) {
       _showError('Masukkan jumlah pemasukan');
@@ -406,13 +897,13 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
         _selectedTime.minute,
       );
 
-      String noteText = _selectedSource;
+      String noteText = _getSourceName(_selectedSource);
       if (_noteController.text.isNotEmpty) {
-        noteText = '$_selectedSource:  ${_noteController.text}';
+        noteText = '$noteText:  ${_noteController.text}';
       }
 
       final transaction = TransactionModel(
-        id: DateTime.now().millisecondsSinceEpoch. toString(),
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         type: TransactionType.income,
         amount: amount,
         walletId: _selectedWalletId!,
@@ -422,19 +913,14 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
       );
 
       await context.read<TransactionProvider>().addTransaction(transaction);
-      await context.read<WalletProvider>().updateBalance(_selectedWalletId!, amount);
+      await context
+          .read<WalletProvider>()
+          .updateBalance(_selectedWalletId!, amount);
 
       if (mounted) {
         HapticFeedback.lightImpact();
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Pemasukan berhasil disimpan!  💰'),
-            backgroundColor: Colors. green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        SnackHelper.success(context, 'Pemasukan berhasil disimpan!');
       }
     } catch (e) {
       _showError('Gagal menyimpan:  $e');
@@ -444,124 +930,13 @@ class _AddIncomeScreenState extends State<AddIncomeScreen>
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors. red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    SnackHelper.error(context, message);
   }
 }
 
-// ==================== WIDGETS ====================
-
-class _BackButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _BackButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onTap,
-      icon: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white. withOpacity(0.2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
-      ),
-    );
-  }
-}
-
-class _AmountCard extends StatelessWidget {
-  final TextEditingController controller;
-  final Color color;
-  final bool isDark;
-
-  const _AmountCard({
-    required this.controller,
-    required this.color,
-    required this. isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: color.withOpacity(0.1),
-                  blurRadius:  20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Jumlah',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[500],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                'Rp',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight. w700,
-                  color: color,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [CurrencyInputFormatter()],
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '0',
-                    hintStyle: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey[300],
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
+// ==================== SOURCE CHIP WIDGET ====================
 class _SourceChip extends StatefulWidget {
-  final String icon;
+  final IconData icon;
   final String label;
   final Color color;
   final bool isSelected;
@@ -571,8 +946,8 @@ class _SourceChip extends StatefulWidget {
     required this.icon,
     required this.label,
     required this.color,
-    required this. isSelected,
-    required this. onTap,
+    required this.isSelected,
+    required this.onTap,
   });
 
   @override
@@ -602,437 +977,30 @@ class _SourceChipState extends State<_SourceChip> {
               : Colors.grey.withOpacity(0.08),
           borderRadius: BorderRadius.circular(14),
           border: widget.isSelected
-              ? Border.all(color: widget.color. withOpacity(0.5), width: 2)
+              ? Border.all(color: widget.color.withOpacity(0.5), width: 2)
               : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(widget.icon, style: const TextStyle(fontSize: 24)),
+            Icon(
+              widget.icon,
+              size: 24,
+              color: widget.isSelected ? widget.color : Colors.grey[600],
+            ),
             const SizedBox(height: 4),
             Text(
               widget.label,
               style: TextStyle(
                 fontSize: 10,
-                fontWeight: widget.isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: widget.isSelected ? widget.color : Colors. grey[600],
+                fontWeight:
+                    widget.isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: widget.isSelected ? widget.color : Colors.grey[600],
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectorCard extends StatefulWidget {
-  final String label;
-  final IconData icon;
-  final String?  value;
-  final String? valueIcon;
-  final String? subtitle;
-  final String placeholder;
-  final bool isDark;
-  final bool compact;
-  final VoidCallback onTap;
-
-  const _SelectorCard({
-    required this.label,
-    required this.icon,
-    this.value,
-    this. valueIcon,
-    this.subtitle,
-    this.placeholder = 'Pilih',
-    required this.isDark,
-    this.compact = false,
-    required this.onTap,
-  });
-
-  @override
-  State<_SelectorCard> createState() => _SelectorCardState();
-}
-
-class _SelectorCardState extends State<_SelectorCard> {
-  bool _isPressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        HapticFeedback.selectionClick();
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
-        transformAlignment: Alignment.center,
-        padding: EdgeInsets.all(widget.compact ? 14 : 16),
-        decoration: BoxDecoration(
-          color: widget.isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius. circular(16),
-          border: Border.all(
-            color: widget.isDark
-                ? Colors.grey[800]!
-                : const Color(0xFF1A1A2E).withOpacity(0.08),
-          ),
-          boxShadow: widget.isDark
-              ? null
-              :  [
-                  BoxShadow(
-                    color: Colors. black.withOpacity(0.03),
-                    blurRadius:  10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                widget.icon,
-                color: Theme.of(context).primaryColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width:  12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment. start,
-                children: [
-                  Text(
-                    widget.label,
-                    style: TextStyle(
-                      fontSize:  11,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      if (widget.valueIcon != null) ...[
-                        Text(widget.valueIcon!, style: const TextStyle(fontSize: 16)),
-                        const SizedBox(width: 6),
-                      ],
-                      Expanded(
-                        child: Text(
-                          widget.value ??  widget.placeholder,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: widget.value != null
-                                ? (widget.isDark ? Colors.white : const Color(0xFF1A1A2E))
-                                : Colors.grey[400],
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (widget. subtitle != null) ...[
-                    const SizedBox(height:  2),
-                    Text(
-                      widget.subtitle!,
-                      style: const TextStyle(fontSize: 11, color: Colors.green),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NoteCard extends StatelessWidget {
-  final TextEditingController controller;
-  final bool isDark;
-  final String hintText;
-
-  const _NoteCard({
-    required this. controller,
-    required this.isDark,
-    this.hintText = 'Catatan',
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ?  const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors. grey[800]!
-              :  const Color(0xFF1A1A2E).withOpacity(0.08),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.grey. withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.note_rounded, color: Colors.grey[500], size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              maxLines: 2,
-              style: TextStyle(
-                fontSize:  14,
-                color: isDark ? Colors.white :  const Color(0xFF1A1A2E),
-              ),
-              decoration: InputDecoration(
-                hintText: hintText,
-                hintStyle: TextStyle(color: Colors.grey[400]),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SaveButton extends StatefulWidget {
-  final String label;
-  final Color color;
-  final IconData icon;
-  final bool isEnabled;
-  final bool isLoading;
-  final VoidCallback onTap;
-
-  const _SaveButton({
-    required this.label,
-    required this.color,
-    required this. icon,
-    required this.isEnabled,
-    required this.isLoading,
-    required this. onTap,
-  });
-
-  @override
-  State<_SaveButton> createState() => _SaveButtonState();
-}
-
-class _SaveButtonState extends State<_SaveButton> {
-  bool _isPressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: widget.isEnabled && !widget.isLoading
-          ? (_) => setState(() => _isPressed = true)
-          : null,
-      onTapUp: widget.isEnabled && !widget.isLoading
-          ? (_) {
-              setState(() => _isPressed = false);
-              HapticFeedback.lightImpact();
-              widget. onTap();
-            }
-          : null,
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.97 : 1.0),
-        transformAlignment: Alignment.center,
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          color: widget.isEnabled ?  widget.color :  Colors.grey[400],
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: widget.isEnabled
-              ? [
-                  BoxShadow(
-                    color: widget.color.withOpacity(0.4),
-                    blurRadius:  20,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (widget.isLoading)
-              const SizedBox(
-                width:  20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            else ...[
-              Icon(widget.icon, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                widget.label,
-                style: const TextStyle(
-                  fontSize:  16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors. white,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PickerSheet extends StatelessWidget {
-  final String title;
-  final bool isDark;
-  final List<Widget> children;
-
-  const _PickerSheet({
-    required this.title,
-    required this.isDark,
-    required this.children,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.6,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: isDark ?  Colors.white : const Color(0xFF1A1A2E),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Flexible(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              shrinkWrap: true,
-              children: children,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PickerItem extends StatelessWidget {
-  final String icon;
-  final String label;
-  final String?  subtitle;
-  final Color?  subtitleColor;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PickerItem({
-    required this.icon,
-    required this.label,
-    this.subtitle,
-    this.subtitleColor,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).primaryColor.withOpacity(0.1)
-              : (isDark ?  Colors.grey[850] : Colors.grey[100]),
-          borderRadius: BorderRadius.circular(14),
-          border: isSelected
-              ? Border.all(color: Theme.of(context).primaryColor. withOpacity(0.3))
-              : null,
-        ),
-        child: Row(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle! ,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: subtitleColor ?? Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (isSelected)
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check, color: Colors.white, size: 14),
-              ),
           ],
         ),
       ),

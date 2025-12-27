@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/category_provider.dart';
+import '../../category/widgets/icon_selector.dart';
 
 class CategoryBreakdown extends StatelessWidget {
   final TransactionProvider txProvider;
@@ -55,12 +56,19 @@ class CategoryBreakdown extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.donut_large_rounded,
-                color: Theme.of(context).primaryColor,
-                size: 20,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.donut_large_rounded,
+                  color: Theme.of(context).primaryColor,
+                  size: 20,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Pengeluaran per Kategori',
@@ -75,10 +83,7 @@ class CategoryBreakdown extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           if (expenseByCategory.isEmpty)
-            const SizedBox(
-              height: 200,
-              child: Center(child: Text('Belum ada data')),
-            )
+            _buildEmptyState(isDark)
           else ...[
             SizedBox(
               height: 200,
@@ -88,6 +93,32 @@ class CategoryBreakdown extends StatelessWidget {
             ..._buildCategoryList(expenseByCategory, isDark),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    return SizedBox(
+      height: 200,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.pie_chart_outline_rounded,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Belum ada data',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -135,25 +166,30 @@ class CategoryBreakdown extends StatelessWidget {
       final percentage = total > 0 ? (entry.value / total * 100) : 0;
       final color = Color(category?.colorValue ?? 0xFF888888);
 
+      // Gunakan IconSelector. getIconData() untuk konsistensi
+      final iconData = IconSelector.getIconData(category?.icon);
+
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Row(
           children: [
+            // Icon Container dengan Flutter Icon
             Container(
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Center(
-                child: Text(
-                  category?.icon ?? '📦',
-                  style: const TextStyle(fontSize: 18),
-                ),
+              child: Icon(
+                iconData,
+                color: color,
+                size: 20,
               ),
             ),
             const SizedBox(width: 12),
+
+            // Category Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,17 +197,18 @@ class CategoryBreakdown extends StatelessWidget {
                   Text(
                     category?.name ?? 'Lainnya',
                     style: TextStyle(
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: percentage / 100,
-                      minHeight: 4,
+                      minHeight: 6,
                       backgroundColor:
                           isDark ? Colors.grey[800] : Colors.grey[200],
                       valueColor: AlwaysStoppedAnimation(color),
@@ -181,6 +218,8 @@ class CategoryBreakdown extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+
+            // Amount & Percentage
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -188,15 +227,25 @@ class CategoryBreakdown extends StatelessWidget {
                   _formatCompact(entry.value),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontSize: 13,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
                 ),
-                Text(
-                  '${percentage.toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[500],
+                const SizedBox(height: 2),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${percentage.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
                   ),
                 ),
               ],

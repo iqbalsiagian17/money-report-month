@@ -74,8 +74,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => SavingProvider()),
-        ChangeNotifierProvider(
-            create: (_) => TodoProvider()), // <-- Tambahkan ini
+        ChangeNotifierProvider(create: (_) => TodoProvider()), 
       ],
       child: const MoneyReportApp(),
     ),

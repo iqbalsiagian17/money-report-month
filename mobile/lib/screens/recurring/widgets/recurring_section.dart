@@ -6,7 +6,6 @@ import 'recurring_card.dart';
 
 class RecurringSection extends StatelessWidget {
   final String title;
-  final String icon;
   final List<RecurringTransaction> items;
   final Wallet? Function(String walletId) getWallet;
   final Function(RecurringTransaction) onItemTap;
@@ -15,7 +14,6 @@ class RecurringSection extends StatelessWidget {
   const RecurringSection({
     super.key,
     required this.title,
-    required this.icon,
     required this.items,
     required this.getWallet,
     required this.onItemTap,
@@ -42,7 +40,6 @@ class RecurringSection extends StatelessWidget {
         // Header
         Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

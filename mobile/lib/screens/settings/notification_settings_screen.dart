@@ -26,9 +26,14 @@ class NotificationSettingsScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Pengaturan Notifikasi'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
           elevation: 0,
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark, // Android
+            statusBarBrightness: Brightness.light, // iOS
+          ),
         ),
         body: Consumer<NotificationProvider>(
           builder: (context, provider, _) {
@@ -71,6 +76,7 @@ class NotificationSettingsScreen extends StatelessWidget {
                   ),
 
                 const SizedBox(height: 24),
+
 
                 // Info Tip
                 const NotificationInfoTip(),

@@ -11,30 +11,19 @@ class TodoStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Consumer<TodoProvider>(
       builder: (context, provider, _) {
         final pendingTodos = provider.pendingTodos;
         final totalCount = provider.totalCount;
         final completedCount = provider.completedCount;
 
-        // Jika tidak ada todo sama sekali
-        if (totalCount == 0) {
-          return _EmptyTodoCard(isDark: isDark);
-        }
-
-        // Jika semua todo sudah selesai
+        // Jika tidak ada pending = jangan tampilkan apa-apa
         if (pendingTodos.isEmpty) {
-          return _AllCompletedCard(
-            isDark: isDark,
-            completedCount: completedCount,
-          );
+          return const SizedBox.shrink();
         }
 
-        // Tampilkan todo yang masih pending
         return _ActiveTodoCard(
-          isDark: isDark,
+          isDark: Theme.of(context).brightness == Brightness.dark,
           pendingTodos: pendingTodos,
           completedCount: completedCount,
           totalCount: totalCount,

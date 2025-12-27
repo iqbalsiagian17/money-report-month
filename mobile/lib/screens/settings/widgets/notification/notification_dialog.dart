@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:money_report_monthly/widgets/snack_helper.dart';
 import 'package:provider/provider.dart';
 import '../../../../models/custom_notification.dart';
 import '../../../../providers/notification_provider.dart';
@@ -203,41 +204,36 @@ class _NotificationDialogState extends State<NotificationDialog> {
   }
 
   void _saveNotification(BuildContext context) {
-    if (_titleController.text.isEmpty || _messageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Judul dan pesan harus diisi'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final provider = context.read<NotificationProvider>();
-
-    if (widget.existing == null) {
-      provider.addNotification(
-        title: _titleController.text,
-        message: _messageController.text,
-        hour: _selectedTime.hour,
-        minute: _selectedTime.minute,
-      );
-    } else {
-      widget.existing!.title = _titleController.text;
-      widget.existing!.message = _messageController.text;
-      widget.existing!.hour = _selectedTime.hour;
-      widget.existing!.minute = _selectedTime.minute;
-      provider.updateNotification(widget.existing!);
-    }
-
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(widget.existing == null
-            ? 'Notifikasi ditambahkan!'
-            : 'Notifikasi diupdate! '),
-        backgroundColor: Colors.green,
-      ),
-    );
+  if (_titleController.text.isEmpty || _messageController.text.isEmpty) {
+    SnackHelper.error(context, 'Judul dan pesan harus diisi');
+    return;
   }
+
+  final provider = context.read<NotificationProvider>();
+
+  if (widget.existing == null) {
+    provider.addNotification(
+      title: _titleController.text,
+      message: _messageController.text,
+      hour: _selectedTime.hour,
+      minute: _selectedTime.minute,
+    );
+  } else {
+    widget.existing!.title = _titleController.text;
+    widget.existing!.message = _messageController.text;
+    widget.existing!.hour = _selectedTime.hour;
+    widget.existing!.minute = _selectedTime.minute;
+
+    provider.updateNotification(widget.existing!);
+  }
+
+  Navigator.pop(context);
+
+  SnackHelper.success(
+    context,
+    widget.existing == null
+        ? 'Notifikasi ditambahkan!'
+        : 'Notifikasi diperbarui!',
+  );
+}
 }
