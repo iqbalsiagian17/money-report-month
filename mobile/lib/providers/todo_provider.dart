@@ -166,26 +166,4 @@ class TodoProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
-
-  // Check and notify for due todos (call this on app start)
-  Future<void> checkDueTodos() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    for (final todo in pendingTodos) {
-      if (todo.dueDate != null) {
-        final dueDate = DateTime(
-          todo.dueDate!.year,
-          todo.dueDate!.month,
-          todo.dueDate!.day,
-        );
-
-        if (dueDate == today) {
-          await NotificationService().showTodoDueNotification(todo);
-        } else if (dueDate.isBefore(today)) {
-          await NotificationService().showTodoOverdueNotification(todo);
-        }
-      }
-    }
-  }
 }

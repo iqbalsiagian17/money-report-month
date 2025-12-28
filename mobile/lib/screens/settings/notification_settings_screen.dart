@@ -20,8 +20,8 @@ class NotificationSettingsScreen extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // ANDROID
-        statusBarBrightness: Brightness.light, // IOS
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
         appBar: AppBar(
@@ -31,8 +31,8 @@ class NotificationSettingsScreen extends StatelessWidget {
           elevation: 0,
           systemOverlayStyle: const SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark, // Android
-            statusBarBrightness: Brightness.light, // iOS
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
           ),
         ),
         body: Consumer<NotificationProvider>(
@@ -40,6 +40,9 @@ class NotificationSettingsScreen extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                // Test Notification Button
+                const SizedBox(height: 24),
+
                 // Default Notifications
                 _buildSectionHeader(
                   title: 'NOTIFIKASI WAJIB',
@@ -77,7 +80,6 @@ class NotificationSettingsScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-
                 // Info Tip
                 const NotificationInfoTip(),
               ],
@@ -87,99 +89,99 @@ class NotificationSettingsScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildSectionHeader({required String title}) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: Colors.grey[500],
-        letterSpacing: 1,
-      ),
-    );
-  }
+Widget _buildSectionHeader({required String title}) {
+  return Text(
+    title,
+    style: TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: Colors.grey[500],
+      letterSpacing: 1,
+    ),
+  );
+}
 
-  Widget _buildCustomHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'NOTIFIKASI CUSTOM',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[500],
-            letterSpacing: 1,
-          ),
+Widget _buildCustomHeader(BuildContext context) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        'NOTIFIKASI CUSTOM',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey[500],
+          letterSpacing: 1,
         ),
-        GestureDetector(
-          onTap: () => _showNotificationDialog(context, null),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.add_rounded,
-                  size: 16,
+      ),
+      GestureDetector(
+        onTap: () => _showNotificationDialog(context, null),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.add_rounded,
+                size: 16,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Tambah',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                   color: Theme.of(context).primaryColor,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  'Tambah',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ],
-    );
-  }
-
-  void _showNotificationDialog(
-      BuildContext context, CustomNotification? existing) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => NotificationDialog(existing: existing),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, CustomNotification notif) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Notifikasi? '),
-        content: Text('Notifikasi "${notif.title}" akan dihapus.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              context.read<NotificationProvider>().deleteNotification(notif.id);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Hapus'),
-          ),
-        ],
       ),
-    );
-  }
+    ],
+  );
+}
+
+void _showNotificationDialog(
+    BuildContext context, CustomNotification? existing) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => NotificationDialog(existing: existing),
+  );
+}
+
+void _confirmDelete(BuildContext context, CustomNotification notif) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Hapus Notifikasi? '),
+      content: Text('Notifikasi "${notif.title}" akan dihapus. '),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            context.read<NotificationProvider>().deleteNotification(notif.id);
+            Navigator.pop(context);
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: const Text('Hapus'),
+        ),
+      ],
+    ),
+  );
 }

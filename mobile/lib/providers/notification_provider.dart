@@ -188,4 +188,5 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> testNotification() async {
     await NotificationService().testNotification();
   }
+  
 }
