@@ -6,6 +6,7 @@ import '../../../providers/saving_provider.dart';
 import '../../../widgets/bottom_sheet/app_bottom_sheet.dart';
 import '../../../widgets/bottom_sheet/variants/options_bottom_sheet.dart';
 import '../../../screens/transaction/widgets/shared/currency_input_formatter.dart';
+import 'deposit_bottom_sheet.dart'; // ✅ Import DepositBottomSheet
 
 enum SavingOptionAction {
   deposit,
@@ -60,7 +61,8 @@ class SavingOptions {
 
     switch (action) {
       case SavingOptionAction.deposit:
-        _showDepositForm(context, saving);
+        // ✅ Gunakan DepositBottomSheet
+        DepositBottomSheet.show(context, saving);
         break;
       case SavingOptionAction.edit:
         _showEditForm(context, saving);
@@ -71,49 +73,6 @@ class SavingOptions {
     }
   }
 
-  // ================= DEPOSIT =================
-  static void _showDepositForm(
-    BuildContext context,
-    SavingGoal saving,
-  ) {
-    final amountController = TextEditingController();
-
-    AppBottomSheet.showForm<bool>(
-      context: context,
-      title: 'Setor Tabungan',
-      submitText: 'Simpan',
-      builder: (context, _) {
-        return TextFormField(
-          controller: amountController,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            CurrencyInputFormatter(),
-          ],
-          decoration: const InputDecoration(
-            labelText: 'Nominal Setoran',
-            prefixText: 'Rp ',
-          ),
-          validator: (value) {
-            final amount = CurrencyInputFormatter.getNumericValue(value ?? '');
-            if (amount <= 0) return 'Masukkan nominal yang valid';
-            return null;
-          },
-        );
-      },
-      onSubmit: () async {
-        final amount =
-            CurrencyInputFormatter.getNumericValue(amountController.text);
-
-        await context.read<SavingProvider>().deposit(
-              saving.id,
-              amount,
-            );
-
-        return true; // auto close
-      },
-    );
-  }
-
   // ================= EDIT =================
   static void _showEditForm(
     BuildContext context,
@@ -121,7 +80,7 @@ class SavingOptions {
   ) {
     final nameController = TextEditingController(text: saving.name);
     final targetController = TextEditingController(
-      text: saving.targetAmount.toInt().toString(),
+      text: NumberFormat('#,###', 'id_ID').format(saving.targetAmount.toInt()),
     );
 
     AppBottomSheet.showForm<bool>(
@@ -130,10 +89,15 @@ class SavingOptions {
       submitText: 'Simpan',
       builder: (context, _) {
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextFormField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Nama Target'),
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Nama Target',
+                prefixIcon: Icon(Icons.flag_rounded),
+              ),
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
             ),
@@ -145,7 +109,13 @@ class SavingOptions {
               decoration: const InputDecoration(
                 labelText: 'Target Nominal',
                 prefixText: 'Rp ',
+                prefixIcon: Icon(Icons.monetization_on_rounded),
               ),
+              validator: (v) {
+                final amount = CurrencyInputFormatter.getNumericValue(v ?? '');
+                if (amount <= 0) return 'Target harus lebih dari 0';
+                return null;
+              },
             ),
           ],
         );
@@ -157,6 +127,7 @@ class SavingOptions {
         saving.name = nameController.text.trim();
         saving.targetAmount = target;
 
+        // Reset completed jika target dinaikkan
         if (saving.currentAmount < saving.targetAmount) {
           saving.isCompleted = false;
         }
@@ -180,6 +151,7 @@ class SavingOptions {
           'Target "${saving.name}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.',
       isDanger: true,
       confirmText: 'Hapus',
+      icon: Icons.delete_forever_rounded,
     );
 
     if (confirmed == true && context.mounted) {

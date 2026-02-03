@@ -21,7 +21,7 @@ class SavingGoalAdapter extends TypeAdapter<SavingGoal> {
       name: fields[1] as String,
       targetAmount: fields[2] as double,
       currentAmount: fields[3] as double,
-      walletId: fields[4] as String,
+      targetWalletId: fields[4] as String,
       createdAt: fields[5] as DateTime?,
       targetDate: fields[6] as DateTime?,
       isCompleted: fields[7] as bool,
@@ -41,7 +41,7 @@ class SavingGoalAdapter extends TypeAdapter<SavingGoal> {
       ..writeByte(3)
       ..write(obj.currentAmount)
       ..writeByte(4)
-      ..write(obj.walletId)
+      ..write(obj.targetWalletId)
       ..writeByte(5)
       ..write(obj.createdAt)
       ..writeByte(6)

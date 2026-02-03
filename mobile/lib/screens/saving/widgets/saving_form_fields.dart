@@ -84,6 +84,7 @@ class SavingTargetField extends StatelessWidget {
   }
 }
 
+// ========== UPDATED: Label diubah ==========
 class SavingWalletDropdown extends StatelessWidget {
   final String? selectedWalletId;
   final List<Wallet> wallets;
@@ -113,7 +114,7 @@ class SavingWalletDropdown extends StatelessWidget {
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Belum ada dompet.  Tambahkan dompet terlebih dahulu.',
+                'Belum ada dompet. Tambahkan dompet terlebih dahulu.',
                 style: TextStyle(color: Colors.orange),
               ),
             ),
@@ -122,39 +123,58 @@ class SavingWalletDropdown extends StatelessWidget {
       );
     }
 
-    return DropdownButtonFormField<String>(
-      value: selectedWalletId,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: 'Sumber Dana',
-        prefixIcon: const Icon(Icons.account_balance_wallet_rounded),
-        filled: true,
-        fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      items: wallets.map((wallet) {
-        return DropdownMenuItem(
-          value: wallet.id,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(wallet.icon ?? '💰', style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Text(
-                  wallet.name,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: selectedWalletId,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'Dompet Tujuan Tabungan', // ✅ UPDATED LABEL
+            prefixIcon: const Icon(Icons.account_balance_wallet_rounded),
+            filled: true,
+            fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
           ),
-        );
-      }).toList(),
-      onChanged: onChanged,
-      validator: (value) => value == null ? 'Pilih sumber dana' : null,
+          items: wallets.map((wallet) {
+            return DropdownMenuItem(
+              value: wallet.id,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(wallet.icon ?? '💰',
+                      style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      wallet.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          validator: (value) => value == null ? 'Pilih dompet tujuan' : null,
+        ),
+        const SizedBox(height: 8),
+        // ✅ ADDED: Hint text untuk menjelaskan
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'Dompet ini adalah tempat uang tabungan Anda akan disimpan. Saat setor, Anda bisa pilih dari dompet mana saja.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[500],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

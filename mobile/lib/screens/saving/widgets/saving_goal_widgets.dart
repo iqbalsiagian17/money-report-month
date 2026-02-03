@@ -30,7 +30,7 @@ class _DepositDialogState extends State<DepositDialog> {
   void initState() {
     super.initState();
     // Default ke wallet yang sama dengan saving
-    _selectedWalletId = widget.saving.walletId;
+    _selectedWalletId = widget.saving.targetWalletId;
   }
 
   @override
@@ -450,7 +450,8 @@ class _DepositDialogState extends State<DepositDialog> {
 
       if (mounted) {
         Navigator.pop(context);
-        SnackHelper.success(context, 'Berhasil menyetor ${_formatCurrency(amount)}');
+        SnackHelper.success(
+            context, 'Berhasil menyetor ${_formatCurrency(amount)}');
       }
     } catch (e) {
       if (mounted) {

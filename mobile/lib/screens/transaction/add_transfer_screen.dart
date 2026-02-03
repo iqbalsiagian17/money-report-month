@@ -532,33 +532,24 @@ class _AddTransferScreenState extends State<AddTransferScreen>
 
       final note = _noteController.text.isNotEmpty
           ? _noteController.text
-          : 'Transfer dana';
+          : 'Transfer antar dompet';
 
-      // Transaksi keluar
-      final outTransaction = TransactionModel(
-        id: '${DateTime.now().millisecondsSinceEpoch}_out',
+      // ✅ UPDATED: Buat SATU transaksi saja dengan toWalletId
+      final transaction = TransactionModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         type: TransactionType.transfer,
         amount: amount,
-        walletId: _fromWalletId!,
+        walletId: _fromWalletId!, // Wallet sumber
+        toWalletId: _toWalletId!, // ✅ Wallet tujuan (field baru)
         categoryId: null,
         dateTime: dateTime,
-        note: 'Transfer keluar:  $note',
+        note: note,
       );
 
-      // Transaksi masuk
-      final inTransaction = TransactionModel(
-        id: '${DateTime.now().millisecondsSinceEpoch}_in',
-        type: TransactionType.transfer,
-        amount: amount,
-        walletId: _toWalletId!,
-        categoryId: null,
-        dateTime: dateTime,
-        note: 'Transfer masuk: $note',
-      );
+      // Simpan SATU transaksi saja
+      await context.read<TransactionProvider>().addTransaction(transaction);
 
-      await context.read<TransactionProvider>().addTransaction(outTransaction);
-      await context.read<TransactionProvider>().addTransaction(inTransaction);
-
+      // Transfer saldo antar wallet
       await context.read<WalletProvider>().transferById(
             fromWalletId: _fromWalletId!,
             toWalletId: _toWalletId!,

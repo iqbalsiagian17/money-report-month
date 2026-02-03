@@ -19,29 +19,45 @@ class TransactionTile extends StatelessWidget {
     );
     final timeFormat = DateFormat('HH:mm');
 
-    final categoryProvider = context.read<CategoryProvider>();
     final walletProvider = context.read<WalletProvider>();
+    final categoryProvider = context.read<CategoryProvider>();
 
+    final wallet = walletProvider.getById(transaction.walletId);
     final category = transaction.categoryId != null
         ? categoryProvider.getById(transaction.categoryId!)
         : null;
-    final wallet = walletProvider.getById(transaction.walletId);
 
-    final isIncome = transaction.type == TransactionType.income;
+    // ✅ Info untuk transfer
+    final toWallet = transaction.toWalletId != null
+        ? walletProvider.getById(transaction.toWalletId!)
+        : null;
 
-    // Tentukan warna dan icon berdasarkan tipe transaksi
+    // Tentukan tampilan berdasarkan tipe
+    String title;
+    String subtitle;
     Color amountColor;
     IconData typeIcon;
-    String typeLabel;
+    String amountPrefix;
 
-    if (isIncome) {
+    if (transaction.type == TransactionType.transfer) {
+      // ✅ Transfer: tampilkan dari → ke
+      title = transaction.note ?? 'Transfer';
+      subtitle = '${wallet?.name ?? "?"} → ${toWallet?.name ?? "?"}';
+      amountColor = Colors.blue;
+      typeIcon = Icons.swap_horiz_rounded;
+      amountPrefix = '';
+    } else if (transaction.type == TransactionType.income) {
+      title = category?.name ?? transaction.note ?? 'Pemasukan';
+      subtitle = wallet?.name ?? '';
       amountColor = Colors.green;
-      typeIcon = Icons.arrow_downward;
-      typeLabel = 'Pemasukan';
+      typeIcon = Icons.arrow_downward_rounded;
+      amountPrefix = '+';
     } else {
+      title = category?.name ?? transaction.note ?? 'Pengeluaran';
+      subtitle = wallet?.name ?? '';
       amountColor = Colors.red;
-      typeIcon = Icons.arrow_upward;
-      typeLabel = 'Pengeluaran';
+      typeIcon = Icons.arrow_upward_rounded;
+      amountPrefix = '-';
     }
 
     return Card(
@@ -74,9 +90,7 @@ class TransactionTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    (transaction.note?.isNotEmpty ?? false)
-                        ? transaction.note!
-                        : typeLabel,
+                    title,
                     style: const TextStyle(
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
@@ -108,7 +122,7 @@ class TransactionTile extends StatelessWidget {
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
-                          wallet?.name ?? 'Unknown',
+                          subtitle,
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey[500],
@@ -127,7 +141,7 @@ class TransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${isIncome ? '+' : '-'}${currencyFormat.format(transaction.amount)}',
+                  '$amountPrefix${currencyFormat.format(transaction.amount)}',
                   style: TextStyle(
                     color: amountColor,
                     fontWeight: FontWeight.bold,

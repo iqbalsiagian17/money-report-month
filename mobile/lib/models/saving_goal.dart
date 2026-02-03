@@ -17,7 +17,7 @@ class SavingGoal extends HiveObject {
   double currentAmount;
 
   @HiveField(4)
-  String walletId;
+  String targetWalletId; 
 
   @HiveField(5)
   DateTime createdAt;
@@ -33,7 +33,7 @@ class SavingGoal extends HiveObject {
     required this.name,
     required this.targetAmount,
     this.currentAmount = 0,
-    required this.walletId,
+    required this.targetWalletId,
     DateTime? createdAt,
     this.targetDate,
     this.isCompleted = false,

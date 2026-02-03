@@ -193,6 +193,7 @@ class SettingsScreen extends StatelessWidget {
 }
 
 // ================= QUICK SETTINGS =================
+// ================= QUICK SETTINGS =================
 class _QuickSettings extends StatelessWidget {
   final ThemeProvider themeProvider;
   final AuthProvider authProvider;
@@ -214,7 +215,8 @@ class _QuickSettings extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _QuickSettingButton(
+          // ✅ Gunakan widget dengan animasi
+          _AnimatedQuickSettingButton(
             icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
             label: isDark ? 'Light' : 'Dark',
             isActive: isDark,
@@ -223,7 +225,7 @@ class _QuickSettings extends StatelessWidget {
               themeProvider.toggleTheme();
             },
           ),
-          _QuickSettingButton(
+          _AnimatedQuickSettingButton(
             icon: authProvider.isLockEnabled
                 ? Icons.lock_rounded
                 : Icons.lock_open_rounded,
@@ -234,7 +236,7 @@ class _QuickSettings extends StatelessWidget {
               SettingsOptions.showSecurity(context, authProvider);
             },
           ),
-          _QuickSettingButton(
+          _AnimatedQuickSettingButton(
             icon: Icons.notifications_rounded,
             label: 'Notif',
             isActive: true,
@@ -249,13 +251,14 @@ class _QuickSettings extends StatelessWidget {
   }
 }
 
-class _QuickSettingButton extends StatelessWidget {
+// ✅ NEW: Animated button dengan transisi smooth
+class _AnimatedQuickSettingButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
 
-  const _QuickSettingButton({
+  const _AnimatedQuickSettingButton({
     required this.icon,
     required this.label,
     required this.isActive,
@@ -263,41 +266,74 @@ class _QuickSettingButton extends StatelessWidget {
   });
 
   @override
+  State<_AnimatedQuickSettingButton> createState() =>
+      _AnimatedQuickSettingButtonState();
+}
+
+class _AnimatedQuickSettingButtonState
+    extends State<_AnimatedQuickSettingButton>
+    with SingleTickerProviderStateMixin {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Expanded(
       child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isActive
-                ? Theme.of(context).primaryColor.withOpacity(0.1)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: isActive
-                    ? Theme.of(context).primaryColor
-                    : (isDark ? Colors.grey[400] : Colors.grey[600]),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: isActive
-                      ? Theme.of(context).primaryColor
-                      : (isDark ? Colors.grey[400] : Colors.grey[600]),
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: _isPressed ? 0.95 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: widget.isActive
+                  ? primaryColor.withOpacity(0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) {
+                    return RotationTransition(
+                      turns: Tween(begin: 0.0, end: 1.0).animate(animation),
+                      child: FadeTransition(opacity: animation, child: child),
+                    );
+                  },
+                  child: Icon(
+                    widget.icon,
+                    key: ValueKey(widget.icon),
+                    size: 22,
+                    color: widget.isActive
+                        ? primaryColor
+                        : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: widget.isActive
+                        ? primaryColor
+                        : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                  ),
+                  child: Text(widget.label),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:money_report_monthly/models/user_profile.dart';
+import 'package:money_report_monthly/screens/app_wrapper.dart';
 import 'package:money_report_monthly/screens/onboarding/onboarding_welcome_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -17,8 +18,8 @@ class MoneyReportApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<ThemeProvider, AuthProvider>(
-      builder: (context, themeProvider, authProvider, child) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
         return MaterialApp(
           title: 'Dompetku',
           debugShowCheckedModeBanner: false,
@@ -26,7 +27,9 @@ class MoneyReportApp extends StatelessWidget {
           darkTheme: AppTheme.darkTheme(themeProvider.primaryColor),
           themeMode: themeProvider.themeMode,
           routes: AppRoutes.routes,
-          home: _getHomeScreen(authProvider),
+          themeAnimationDuration: const Duration(milliseconds: 300),
+          themeAnimationCurve: Curves.easeInOut,
+          home: const AppWrapper(),
         );
       },
     );

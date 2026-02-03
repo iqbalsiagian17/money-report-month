@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/custom_notification.dart';
 import '../../providers/notification_provider.dart';
+import '../../services/notification_service.dart'; // ✅ Import NotificationService
 
 // Import widgets
 import 'widgets/notification/notification_section.dart';
@@ -10,8 +11,92 @@ import 'widgets/notification/empty_custom.dart';
 import 'widgets/notification/notification_dialog.dart';
 import 'widgets/notification/info_tip.dart';
 
-class NotificationSettingsScreen extends StatelessWidget {
+class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
+
+  @override
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
+}
+
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
+  bool _isSendingTest = false;
+
+  Future<void> _sendTestNotification() async {
+    if (_isSendingTest) return;
+
+    setState(() => _isSendingTest = true);
+    HapticFeedback.lightImpact();
+
+    try {
+      // ✅ Coba salah satu dari opsi berikut sesuai NotificationService Anda:
+
+      // Opsi 1: showInstantNotification
+      await NotificationService().showInstantNotification(
+        title: '🔔 Test Notifikasi',
+        body: 'Notifikasi berhasil! Pengaturan notifikasi Anda sudah benar.',
+      );
+
+      // Opsi 2: show
+      // await NotificationService().show(
+      //   id: 99999,
+      //   title: '🔔 Test Notifikasi',
+      //   body: 'Notifikasi berhasil! Pengaturan notifikasi Anda sudah benar.',
+      // );
+
+      // Opsi 3: displayNotification
+      // await NotificationService().displayNotification(
+      //   title: '🔔 Test Notifikasi',
+      //   body: 'Notifikasi berhasil! Pengaturan notifikasi Anda sudah benar.',
+      // );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 12),
+                Text('Notifikasi test berhasil dikirim!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Gagal: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSendingTest = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,19 +119,34 @@ class NotificationSettingsScreen extends StatelessWidget {
             statusBarIconBrightness: Brightness.dark,
             statusBarBrightness: Brightness.light,
           ),
+          // ✅ Tombol Test Notifikasi di AppBar
+          actions: [
+            IconButton(
+              onPressed: _isSendingTest ? null : _sendTestNotification,
+              tooltip: 'Test Notifikasi',
+              icon: _isSendingTest
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    )
+                  : Icon(
+                      Icons.notifications_active_rounded,
+                      color: Theme.of(context).primaryColor,
+                    ),
+            ),
+          ],
         ),
         body: Consumer<NotificationProvider>(
           builder: (context, provider, _) {
             return ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // Test Notification Button
-                const SizedBox(height: 24),
-
                 // Default Notifications
-                _buildSectionHeader(
-                  title: 'NOTIFIKASI WAJIB',
-                ),
+                _buildSectionHeader(title: 'NOTIFIKASI WAJIB'),
                 const SizedBox(height: 12),
                 NotificationSection(
                   notifications: provider.defaultNotifications,
@@ -82,6 +182,8 @@ class NotificationSettingsScreen extends StatelessWidget {
 
                 // Info Tip
                 const NotificationInfoTip(),
+
+                const SizedBox(height: 40),
               ],
             );
           },
@@ -166,8 +268,8 @@ void _confirmDelete(BuildContext context, CustomNotification notif) {
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Hapus Notifikasi? '),
-      content: Text('Notifikasi "${notif.title}" akan dihapus. '),
+      title: const Text('Hapus Notifikasi?'),
+      content: Text('Notifikasi "${notif.title}" akan dihapus.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),

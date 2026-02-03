@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:money_report_monthly/screens/saving/widgets/deposit_bottom_sheet.dart';
 import 'package:money_report_monthly/screens/saving/widgets/saving_form_fields.dart';
 import 'package:money_report_monthly/screens/saving/widgets/saving_header_icon.dart';
 import 'package:money_report_monthly/screens/saving/widgets/saving_options.dart';
@@ -62,9 +63,9 @@ class SavingListScreen extends StatelessWidget {
                   ...savingProvider.activeSavings.map(
                     (saving) => SavingCard(
                       saving: saving,
-                      wallet: walletProvider.getById(saving.walletId),
+                      wallet: walletProvider.getById(saving.targetWalletId),
                       onTap: () => SavingOptions.show(context, saving),
-                      onDeposit: () => _showDepositDialog(context, saving),
+                      onDeposit: () => DepositBottomSheet.show(context, saving),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -83,9 +84,9 @@ class SavingListScreen extends StatelessWidget {
                   ...savingProvider.completedSavings.map(
                     (saving) => SavingCard(
                       saving: saving,
-                      wallet: walletProvider.getById(saving.walletId),
+                      wallet: walletProvider.getById(saving.targetWalletId),
                       onTap: () => SavingOptions.show(context, saving),
-                      onDeposit: () {},
+                      onDeposit: () => DepositBottomSheet.show(context, saving),
                     ),
                   ),
                 ],
@@ -170,14 +171,14 @@ void _showAddSavingSheet(BuildContext context) {
           name: nameController.text.trim(),
           targetAmount: targetAmount,
           currentAmount: 0,
-          walletId: selectedWalletId!,
+          targetWalletId: selectedWalletId!,
           createdAt: DateTime.now(),
           targetDate: targetDate,
           isCompleted: false,
         ),
       );
 
-      return true; // ✅ penting → auto close bottom sheet
+      return true;
     },
   );
 }

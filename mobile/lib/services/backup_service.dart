@@ -523,6 +523,8 @@ class BackupService {
         'amount': t.amount,
         'dateTime': t.dateTime.toIso8601String(),
         'note': t.note,
+        'toWalletId': t.toWalletId, // ✅ NEW
+        'savingGoalId': t.savingGoalId, // ✅ NEW
       };
 
   TransactionModel _mapToTransaction(Map<String, dynamic> m) =>
@@ -536,8 +538,9 @@ class BackupService {
             ? DateTime.parse(m['dateTime'])
             : DateTime.now(),
         note: m['note'],
+        toWalletId: m['toWalletId'], // ✅ NEW
+        savingGoalId: m['savingGoalId'], // ✅ NEW
       );
-
   // ============================================================
   // CATEGORY CONVERTERS (typeId: 4)
   // ============================================================
@@ -565,7 +568,8 @@ class BackupService {
         'name': s.name,
         'targetAmount': s.targetAmount,
         'currentAmount': s.currentAmount,
-        'walletId': s.walletId,
+        'targetWalletId':
+            s.targetWalletId, // ✅ UPDATED: walletId → targetWalletId
         'createdAt': s.createdAt.toIso8601String(),
         'targetDate': s.targetDate?.toIso8601String(),
         'isCompleted': s.isCompleted,
@@ -576,7 +580,8 @@ class BackupService {
         name: m['name'],
         targetAmount: (m['targetAmount'] as num?)?.toDouble() ?? 0,
         currentAmount: (m['currentAmount'] as num?)?.toDouble() ?? 0,
-        walletId: m['walletId'],
+        // ✅ UPDATED: Support both old 'walletId' and new 'targetWalletId' for backward compatibility
+        targetWalletId: m['targetWalletId'] ?? m['walletId'] ?? '',
         createdAt: m['createdAt'] != null
             ? DateTime.parse(m['createdAt'])
             : DateTime.now(),

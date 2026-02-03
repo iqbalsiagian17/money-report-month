@@ -9,7 +9,7 @@ enum TransactionType {
   @HiveField(1)
   expense,
   @HiveField(2)
-  transfer, 
+  transfer,
 }
 
 @HiveType(typeId: 3)
@@ -21,7 +21,8 @@ class TransactionModel extends HiveObject {
   TransactionType type;
 
   @HiveField(2)
-  String walletId;
+  String
+      walletId; // Wallet utama (sumber untuk transfer/expense, tujuan untuk income)
 
   @HiveField(3)
   String? categoryId;
@@ -29,20 +30,35 @@ class TransactionModel extends HiveObject {
   @HiveField(4)
   double amount;
 
-  /// Wajib sesuai HiveService → dateTime
   @HiveField(5)
   DateTime dateTime;
 
   @HiveField(6)
-  String? note; // <- nullable
+  String? note;
+
+  // ✅ NEW: Untuk transfer - wallet tujuan
+  @HiveField(7)
+  String? toWalletId;
+
+  // ✅ NEW: Untuk tracking setor tabungan
+  @HiveField(8)
+  String? savingGoalId;
 
   TransactionModel({
     required this.id,
     required this.type,
     required this.walletId,
-    required this.categoryId,
+    this.categoryId,
     required this.amount,
     required this.dateTime,
     this.note,
+    this.toWalletId, // ✅ NEW
+    this.savingGoalId, // ✅ NEW
   });
+
+  // ✅ Helper: Apakah ini transaksi transfer?
+  bool get isTransfer => type == TransactionType.transfer && toWalletId != null;
+
+  // ✅ Helper: Apakah ini setor tabungan?
+  bool get isSavingDeposit => savingGoalId != null;
 }
