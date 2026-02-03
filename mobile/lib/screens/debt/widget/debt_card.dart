@@ -265,8 +265,7 @@ class DebtCard extends StatelessWidget {
           icon = Icons.timelapse_rounded;
           break;
         case DebtStatus.pending:
-        default:
-          color = Colors.grey;
+        color = Colors.grey;
           label = 'Pending';
           icon = Icons.schedule_rounded;
       }

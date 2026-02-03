@@ -2,10 +2,13 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:money_report_monthly/screens/home/widget/balance_card_advanced_sheet.dart';
 import 'package:provider/provider.dart';
 import '../../../models/user_profile.dart';
 import '../../../providers/user_provider.dart';
+import '../../../providers/balance_card_provider.dart';
 import '../../settings/widgets/settings/settings_options.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -38,6 +41,7 @@ class HomeHeader extends StatelessWidget {
 
               const SizedBox(width: 14),
 
+              // NAME & GREETING
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,6 +83,11 @@ class HomeHeader extends StatelessWidget {
                   ],
                 ),
               ),
+
+              const SizedBox(width: 12),
+
+              // ✅ EDIT BALANCE CARD BUTTON
+              _EditBalanceCardButton(isDark: isDark),
             ],
           ),
         );
@@ -207,6 +216,82 @@ class _GreetingData {
     required this.icon,
     required this.iconColor,
   });
+}
+
+// ================= EDIT BALANCE CARD BUTTON =================
+class _EditBalanceCardButton extends StatelessWidget {
+  final bool isDark;
+
+  const _EditBalanceCardButton({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showCustomizeSheet(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.grey[800]
+              : Theme.of(context).primaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark
+                ? Colors.grey[700]!
+                : Theme.of(context).primaryColor.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(
+              Icons.credit_card_rounded,
+              size: 20,
+              color: isDark ? Colors.grey[400] : Theme.of(context).primaryColor,
+            ),
+            // Edit badge
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.edit_rounded,
+                  size: 8,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+// Update method
+  void _showCustomizeSheet(BuildContext context) {
+    final provider = context.read<BalanceCardProvider>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          AdvancedCustomizeSheet(provider: provider), // ✅ Use advanced
+    );
+  }
 }
 
 // ================= USER AVATAR =================
