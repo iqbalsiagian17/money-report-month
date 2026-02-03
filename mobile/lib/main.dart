@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:money_report_monthly/models/todo.dart';
-import 'package:money_report_monthly/providers/todo_provider.dart'; // <-- Tambahkan import
+import 'package:money_report_monthly/models/quick_action_item.dart';
+import 'package:money_report_monthly/providers/quick_action_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -14,6 +14,9 @@ import 'models/saving_goal.dart';
 import 'models/recurring_transaction.dart';
 import 'models/user_profile.dart';
 import 'models/custom_notification.dart';
+import 'models/todo.dart';
+import 'models/debt.dart'; // ✅ Import Debt
+
 import 'providers/wallet_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/category_provider.dart';
@@ -22,6 +25,9 @@ import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/notification_provider.dart';
+import 'providers/todo_provider.dart';
+import 'providers/debt_provider.dart'; // ✅ Import DebtProvider
+
 import 'services/notification_service.dart';
 
 void main() async {
@@ -30,19 +36,28 @@ void main() async {
   await initializeDateFormatting('id_ID', null);
   await Hive.initFlutter();
 
-  Hive.registerAdapter(UserProfileAdapter());
-  Hive.registerAdapter(WalletTypeAdapter());
-  Hive.registerAdapter(WalletAdapter());
-  Hive.registerAdapter(TransactionTypeAdapter());
-  Hive.registerAdapter(TransactionModelAdapter());
-  Hive.registerAdapter(CategoryModelAdapter());
-  Hive.registerAdapter(SavingGoalAdapter());
-  Hive.registerAdapter(RecurringTypeAdapter());
-  Hive.registerAdapter(RecurringTransactionAdapter());
-  Hive.registerAdapter(CustomNotificationAdapter());
-  Hive.registerAdapter(TodoAdapter());
+  // Register adapters
+  // Register adapters
+  Hive.registerAdapter(UserProfileAdapter()); // typeId: 10
+  Hive.registerAdapter(WalletTypeAdapter()); // typeId: 0
+  Hive.registerAdapter(WalletAdapter()); // typeId: 1
+  Hive.registerAdapter(TransactionTypeAdapter()); // typeId: 2
+  Hive.registerAdapter(TransactionModelAdapter()); // typeId: 3
+  Hive.registerAdapter(CategoryModelAdapter()); // typeId: 4
+  Hive.registerAdapter(SavingGoalAdapter()); // typeId: 5
+  Hive.registerAdapter(RecurringTypeAdapter()); // typeId: 7
+  Hive.registerAdapter(RecurringTransactionAdapter()); // typeId: 8
+  Hive.registerAdapter(CustomNotificationAdapter()); // typeId: 11
+  Hive.registerAdapter(TodoAdapter()); // typeId: 20
 
-  // Open boxes (SATU KALI)
+  // ✅ Debt adapters dengan typeId baru
+  Hive.registerAdapter(DebtTypeAdapter()); // typeId: 13
+  Hive.registerAdapter(DebtStatusAdapter()); // typeId: 14
+  Hive.registerAdapter(DebtAdapter()); // typeId: 15
+  Hive.registerAdapter(DebtPaymentAdapter()); // typeId: 16
+  Hive.registerAdapter(QuickActionItemAdapter()); // typeId: 17
+
+  // Open boxes
   await Hive.openBox<UserProfile>('user_profile');
   await Hive.openBox('app_state');
   await Hive.openBox<Wallet>('wallets');
@@ -53,6 +68,8 @@ void main() async {
   await Hive.openBox<CustomNotification>('custom_notifications');
   await Hive.openBox('settings');
   await Hive.openBox<Todo>('todos');
+  await Hive.openBox<Debt>('debts'); // ✅ Open debts box
+await Hive.openBox<QuickActionItem>('quick_actions');
 
   // Initialize Notifications
   try {
@@ -74,7 +91,10 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
         ChangeNotifierProvider(create: (_) => SavingProvider()),
-        ChangeNotifierProvider(create: (_) => TodoProvider()), 
+        ChangeNotifierProvider(create: (_) => TodoProvider()),
+        ChangeNotifierProvider(
+            create: (_) => DebtProvider()), // ��� Add DebtProvider
+            ChangeNotifierProvider(create: (_) => QuickActionProvider()),
       ],
       child: const MoneyReportApp(),
     ),

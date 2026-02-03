@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:money_report_monthly/screens/debt/debt_list_screen.dart';
 import 'package:money_report_monthly/screens/settings/limit_settings_screen.dart';
 import 'package:money_report_monthly/screens/settings/notification_settings_screen.dart';
 import 'package:money_report_monthly/screens/todo/todo_list_screen.dart';
@@ -36,6 +37,8 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String todo = '/todo';
   static const String transfer = '/transfer';
+  static const String debts = '/debts';
+
 
   static Map<String, WidgetBuilder> routes = {
     onboarding: (context) => const OnboardingWelcomeScreen(),
@@ -54,5 +57,6 @@ class AppRoutes {
     settings: (context) => const SettingsScreen(),
     todo: (context) => const TodoListScreen(),
     transfer: (context) => const AddTransferScreen(),
+    debts: (context) => const DebtListScreen(),
   };
 }

@@ -561,6 +561,15 @@ class _BackupScreenState extends State<BackupScreen> {
                   Icons.notifications_rounded, Colors.amber),
             ],
           ),
+          const SizedBox(height: 12),
+          // ✅ NEW: Debts row
+          Row(
+            children: [
+              _buildStatItem('Hutang/Piutang', stats.debts,
+                  Icons.receipt_long_rounded, Colors.deepOrange),
+              const Expanded(child: SizedBox()), // Empty spacer
+            ],
+          ),
           const Divider(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -18,6 +18,7 @@ import '../models/recurring_transaction.dart';
 import '../models/user_profile.dart';
 import '../models/todo.dart';
 import '../models/custom_notification.dart';
+import '../models/debt.dart';
 
 class BackupService {
   static final BackupService _instance = BackupService._internal();
@@ -27,10 +28,9 @@ class BackupService {
   static void restartApp() {
     SystemNavigator.pop();
   }
-  // ============ ENSURE BOXES ARE OPEN ============
 
+  // ============ ENSURE BOXES ARE OPEN ============
   Future<void> _ensureBoxesOpen() async {
-    // Open boxes if not already open
     if (!Hive.isBoxOpen('wallets')) {
       await Hive.openBox<Wallet>('wallets');
     }
@@ -40,8 +40,8 @@ class BackupService {
     if (!Hive.isBoxOpen('categories')) {
       await Hive.openBox<CategoryModel>('categories');
     }
-    if (!Hive.isBoxOpen('saving_goal')) {
-      await Hive.openBox<SavingGoal>('saving_goal');
+    if (!Hive.isBoxOpen('savings')) {
+      await Hive.openBox<SavingGoal>('savings');
     }
     if (!Hive.isBoxOpen('recurring')) {
       await Hive.openBox<RecurringTransaction>('recurring');
@@ -49,8 +49,8 @@ class BackupService {
     if (!Hive.isBoxOpen('user_profile')) {
       await Hive.openBox<UserProfile>('user_profile');
     }
-    if (!Hive.isBoxOpen('todo')) {
-      await Hive.openBox<Todo>('todo');
+    if (!Hive.isBoxOpen('todos')) {
+      await Hive.openBox<Todo>('todos');
     }
     if (!Hive.isBoxOpen('custom_notifications')) {
       await Hive.openBox<CustomNotification>('custom_notifications');
@@ -61,10 +61,12 @@ class BackupService {
     if (!Hive.isBoxOpen('app_state')) {
       await Hive.openBox('app_state');
     }
+    if (!Hive.isBoxOpen('debts')) {
+      await Hive.openBox<Debt>('debts');
+    }
   }
 
   // ============ STORAGE HELPERS ============
-
   Future<Directory?> _getPublicDownloadDirectory() async {
     if (Platform.isAndroid) {
       await Permission.storage.request();
@@ -84,7 +86,6 @@ class BackupService {
         }
       }
 
-      // Fallback:  create Dompetku folder
       final externalDir = Directory('/storage/emulated/0/Dompetku');
       if (!await externalDir.exists()) {
         await externalDir.create(recursive: true);
@@ -111,7 +112,6 @@ class BackupService {
   }
 
   // ============ SAFE BOX GETTERS ============
-
   List<T> _safeGetBoxValues<T>(String boxName) {
     try {
       if (Hive.isBoxOpen(boxName)) {
@@ -135,28 +135,26 @@ class BackupService {
   }
 
   // ============ EXPORT METHODS ============
-
   Future<Map<String, dynamic>> exportToJson() async {
-    // Ensure all boxes are open first
     await _ensureBoxesOpen();
 
-    // Get all data safely
     final wallets = _safeGetBoxValues<Wallet>('wallets');
     final transactions = _safeGetBoxValues<TransactionModel>('transactions');
     final categories = _safeGetBoxValues<CategoryModel>('categories');
-    final savings = _safeGetBoxValues<SavingGoal>('saving_goal');
+    final savings = _safeGetBoxValues<SavingGoal>('savings');
     final recurring = _safeGetBoxValues<RecurringTransaction>('recurring');
     final userProfiles = _safeGetBoxValues<UserProfile>('user_profile');
-    final todos = _safeGetBoxValues<Todo>('todo');
+    final todos = _safeGetBoxValues<Todo>('todos');
     final notifications =
         _safeGetBoxValues<CustomNotification>('custom_notifications');
+    final debts = _safeGetBoxValues<Debt>('debts');
 
     return {
       'version': '2.0.0',
       'appName': 'Dompetku',
       'exportDate': DateTime.now().toIso8601String(),
 
-      // All 8 Models
+      // All Models
       'wallets': wallets.map((w) => _walletToMap(w)).toList(),
       'transactions': transactions.map((t) => _transactionToMap(t)).toList(),
       'categories': categories.map((c) => _categoryToMap(c)).toList(),
@@ -165,6 +163,7 @@ class BackupService {
       'userProfiles': userProfiles.map((u) => _userProfileToMap(u)).toList(),
       'todos': todos.map((t) => _todoToMap(t)).toList(),
       'notifications': notifications.map((n) => _notificationToMap(n)).toList(),
+      'debts': debts.map((d) => _debtToMap(d)).toList(),
 
       // Settings
       'settings': {
@@ -186,6 +185,7 @@ class BackupService {
         'totalUserProfiles': userProfiles.length,
         'totalTodos': todos.length,
         'totalNotifications': notifications.length,
+        'totalDebts': debts.length,
       },
     };
   }
@@ -197,7 +197,7 @@ class BackupService {
         return BackupResult(
           success: false,
           message:
-              'Izin penyimpanan ditolak.  Silakan berikan izin di pengaturan.',
+              'Izin penyimpanan ditolak. Silakan berikan izin di pengaturan.',
         );
       }
 
@@ -215,7 +215,7 @@ class BackupService {
 
         return BackupResult(
           success: true,
-          message: 'Backup berhasil disimpan! ',
+          message: 'Backup berhasil disimpan!',
           filePath: file.path,
           fileName: fileName,
           stats: data['stats'] as Map<String, dynamic>?,
@@ -313,7 +313,6 @@ class BackupService {
   }
 
   // ============ IMPORT METHODS ============
-
   Future<ImportResult> importFromFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -343,7 +342,7 @@ class BackupService {
 
       return ImportResult(
         success: true,
-        message: 'Import berhasil! ',
+        message: 'Import berhasil!',
         stats: ImportStats(
           wallets: (data['wallets'] as List?)?.length ?? 0,
           transactions: (data['transactions'] as List?)?.length ?? 0,
@@ -353,6 +352,7 @@ class BackupService {
           userProfiles: (data['userProfiles'] as List?)?.length ?? 0,
           todos: (data['todos'] as List?)?.length ?? 0,
           notifications: (data['notifications'] as List?)?.length ?? 0,
+          debts: (data['debts'] as List?)?.length ?? 0,
         ),
       );
     } catch (e) {
@@ -362,18 +362,18 @@ class BackupService {
   }
 
   Future<void> _importData(Map<String, dynamic> data) async {
-    // Ensure all boxes are open first
     await _ensureBoxesOpen();
 
     // Clear existing data safely
     await _safeClearBox<Wallet>('wallets');
     await _safeClearBox<TransactionModel>('transactions');
     await _safeClearBox<CategoryModel>('categories');
-    await _safeClearBox<SavingGoal>('saving_goal');
+    await _safeClearBox<SavingGoal>('savings');
     await _safeClearBox<RecurringTransaction>('recurring');
     await _safeClearBox<UserProfile>('user_profile');
-    await _safeClearBox<Todo>('todo');
+    await _safeClearBox<Todo>('todos');
     await _safeClearBox<CustomNotification>('custom_notifications');
+    await _safeClearBox<Debt>('debts');
 
     // Import Wallets
     if (data['wallets'] != null) {
@@ -404,7 +404,7 @@ class BackupService {
 
     // Import Savings
     if (data['savings'] != null) {
-      final box = Hive.box<SavingGoal>('saving_goal');
+      final box = Hive.box<SavingGoal>('savings');
       for (final item in data['savings']) {
         final saving = _mapToSaving(item);
         await box.put(saving.id, saving);
@@ -431,7 +431,7 @@ class BackupService {
 
     // Import Todos
     if (data['todos'] != null) {
-      final box = Hive.box<Todo>('todo');
+      final box = Hive.box<Todo>('todos');
       for (final item in data['todos']) {
         final todo = _mapToTodo(item);
         await box.add(todo);
@@ -444,6 +444,15 @@ class BackupService {
       for (final item in data['notifications']) {
         final notification = _mapToNotification(item);
         await box.put(notification.id, notification);
+      }
+    }
+
+    // Import Debts
+    if (data['debts'] != null) {
+      final box = Hive.box<Debt>('debts');
+      for (final item in data['debts']) {
+        final debt = _mapToDebt(item);
+        await box.put(debt.id, debt);
       }
     }
 
@@ -476,7 +485,6 @@ class BackupService {
       }
     } catch (e) {
       debugPrint('Error clearing box $boxName: $e');
-      // Try with untyped box
       try {
         if (Hive.isBoxOpen(boxName)) {
           await Hive.box(boxName).clear();
@@ -488,7 +496,7 @@ class BackupService {
   }
 
   // ============================================================
-  // WALLET CONVERTERS (typeId: 0 = WalletType, typeId: 1 = Wallet)
+  // WALLET CONVERTERS
   // ============================================================
   Map<String, dynamic> _walletToMap(Wallet w) => {
         'id': w.id,
@@ -513,7 +521,7 @@ class BackupService {
       );
 
   // ============================================================
-  // TRANSACTION CONVERTERS (typeId: 2 = TransactionType, typeId: 3 = TransactionModel)
+  // TRANSACTION CONVERTERS
   // ============================================================
   Map<String, dynamic> _transactionToMap(TransactionModel t) => {
         'id': t.id,
@@ -523,8 +531,8 @@ class BackupService {
         'amount': t.amount,
         'dateTime': t.dateTime.toIso8601String(),
         'note': t.note,
-        'toWalletId': t.toWalletId, // ✅ NEW
-        'savingGoalId': t.savingGoalId, // ✅ NEW
+        'toWalletId': t.toWalletId,
+        'savingGoalId': t.savingGoalId,
       };
 
   TransactionModel _mapToTransaction(Map<String, dynamic> m) =>
@@ -538,11 +546,12 @@ class BackupService {
             ? DateTime.parse(m['dateTime'])
             : DateTime.now(),
         note: m['note'],
-        toWalletId: m['toWalletId'], // ✅ NEW
-        savingGoalId: m['savingGoalId'], // ✅ NEW
+        toWalletId: m['toWalletId'],
+        savingGoalId: m['savingGoalId'],
       );
+
   // ============================================================
-  // CATEGORY CONVERTERS (typeId: 4)
+  // CATEGORY CONVERTERS
   // ============================================================
   Map<String, dynamic> _categoryToMap(CategoryModel c) => {
         'id': c.id,
@@ -561,15 +570,14 @@ class BackupService {
       );
 
   // ============================================================
-  // SAVING GOAL CONVERTERS (typeId: 5)
+  // SAVING GOAL CONVERTERS
   // ============================================================
   Map<String, dynamic> _savingToMap(SavingGoal s) => {
         'id': s.id,
         'name': s.name,
         'targetAmount': s.targetAmount,
         'currentAmount': s.currentAmount,
-        'targetWalletId':
-            s.targetWalletId, // ✅ UPDATED: walletId → targetWalletId
+        'targetWalletId': s.targetWalletId,
         'createdAt': s.createdAt.toIso8601String(),
         'targetDate': s.targetDate?.toIso8601String(),
         'isCompleted': s.isCompleted,
@@ -580,7 +588,6 @@ class BackupService {
         name: m['name'],
         targetAmount: (m['targetAmount'] as num?)?.toDouble() ?? 0,
         currentAmount: (m['currentAmount'] as num?)?.toDouble() ?? 0,
-        // ✅ UPDATED: Support both old 'walletId' and new 'targetWalletId' for backward compatibility
         targetWalletId: m['targetWalletId'] ?? m['walletId'] ?? '',
         createdAt: m['createdAt'] != null
             ? DateTime.parse(m['createdAt'])
@@ -591,7 +598,7 @@ class BackupService {
       );
 
   // ============================================================
-  // RECURRING TRANSACTION CONVERTERS (typeId: 7 = RecurringType, typeId: 8)
+  // RECURRING TRANSACTION CONVERTERS
   // ============================================================
   Map<String, dynamic> _recurringToMap(RecurringTransaction r) => {
         'id': r.id,
@@ -623,7 +630,7 @@ class BackupService {
       );
 
   // ============================================================
-  // USER PROFILE CONVERTERS (typeId: 10)
+  // USER PROFILE CONVERTERS
   // ============================================================
   Map<String, dynamic> _userProfileToMap(UserProfile u) => {
         'name': u.name,
@@ -656,7 +663,7 @@ class BackupService {
       );
 
   // ============================================================
-  // CUSTOM NOTIFICATION CONVERTERS (typeId: 11)
+  // CUSTOM NOTIFICATION CONVERTERS
   // ============================================================
   Map<String, dynamic> _notificationToMap(CustomNotification n) => {
         'id': n.id,
@@ -680,7 +687,7 @@ class BackupService {
       );
 
   // ============================================================
-  // TODO CONVERTERS (typeId: 20)
+  // TODO CONVERTERS
   // ============================================================
   Map<String, dynamic> _todoToMap(Todo t) => {
         'title': t.title,
@@ -704,6 +711,60 @@ class BackupService {
             : null,
         hasReminder: m['hasReminder'] ?? false,
         notificationId: m['notificationId'],
+      );
+
+  // ============================================================
+  // DEBT CONVERTERS
+  // ============================================================
+  Map<String, dynamic> _debtToMap(Debt d) => {
+        'id': d.id,
+        'type': d.type.index,
+        'personName': d.personName,
+        'personPhone': d.personPhone,
+        'amount': d.amount,
+        'paidAmount': d.paidAmount,
+        'description': d.description,
+        'createdAt': d.createdAt.toIso8601String(),
+        'dueDate': d.dueDate?.toIso8601String(),
+        'status': d.status.index,
+        'walletId': d.walletId,
+        'payments': d.payments.map((p) => _debtPaymentToMap(p)).toList(),
+      };
+
+  Map<String, dynamic> _debtPaymentToMap(DebtPayment p) => {
+        'id': p.id,
+        'amount': p.amount,
+        'date': p.date.toIso8601String(),
+        'note': p.note,
+        'walletId': p.walletId,
+      };
+
+  Debt _mapToDebt(Map<String, dynamic> m) => Debt(
+        id: m['id'],
+        type: DebtType.values[m['type'] ?? 0],
+        personName: m['personName'] ?? '',
+        personPhone: m['personPhone'],
+        amount: (m['amount'] as num?)?.toDouble() ?? 0,
+        paidAmount: (m['paidAmount'] as num?)?.toDouble() ?? 0,
+        description: m['description'],
+        createdAt: m['createdAt'] != null
+            ? DateTime.parse(m['createdAt'])
+            : DateTime.now(),
+        dueDate: m['dueDate'] != null ? DateTime.parse(m['dueDate']) : null,
+        status: DebtStatus.values[m['status'] ?? 0],
+        walletId: m['walletId'],
+        payments: (m['payments'] as List?)
+                ?.map((p) => _mapToDebtPayment(p as Map<String, dynamic>))
+                .toList() ??
+            [],
+      );
+
+  DebtPayment _mapToDebtPayment(Map<String, dynamic> m) => DebtPayment(
+        id: m['id'],
+        amount: (m['amount'] as num?)?.toDouble() ?? 0,
+        date: m['date'] != null ? DateTime.parse(m['date']) : DateTime.now(),
+        note: m['note'],
+        walletId: m['walletId'],
       );
 }
 
@@ -747,6 +808,7 @@ class ImportStats {
   final int userProfiles;
   final int todos;
   final int notifications;
+  final int debts;
 
   ImportStats({
     required this.wallets,
@@ -757,6 +819,7 @@ class ImportStats {
     required this.userProfiles,
     required this.todos,
     required this.notifications,
+    required this.debts,
   });
 
   int get total =>
@@ -767,5 +830,6 @@ class ImportStats {
       recurring +
       userProfiles +
       todos +
-      notifications;
+      notifications +
+      debts;
 }

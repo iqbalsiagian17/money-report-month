@@ -134,6 +134,14 @@ class SettingsScreen extends StatelessWidget {
                               context, authProvider),
                         ),
                         SettingsTile(
+                          icon: Icons.receipt_long_rounded,
+                          iconColor: Colors.deepOrange,
+                          title: 'Hutang & Piutang',
+                          subtitle: 'Kelola catatan hutang piutang',
+                          onTap: () =>
+                              Navigator.pushNamed(context, AppRoutes.debts),
+                        ),
+                        SettingsTile(
                           icon: Icons.backup_rounded,
                           iconColor: Colors.cyan,
                           title: 'Backup & Restore',
